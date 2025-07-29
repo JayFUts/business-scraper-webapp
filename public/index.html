@@ -8,10 +8,61 @@
 </head>
 <body>
   <div class="container">
-    <header>
-      <h1>🗺️ Business Scraper</h1>
-      <p>Extract business information from Google Maps</p>
-    </header>
+    <!-- Auth Section -->
+    <div id="authSection" class="auth-section">
+      <div class="auth-card">
+        <h1>🗺️ LeadFinders</h1>
+        <p>Professional business data from Google Maps</p>
+        
+        <div class="auth-tabs">
+          <button class="auth-tab active" onclick="showLogin()">Login</button>
+          <button class="auth-tab" onclick="showRegister()">Register</button>
+        </div>
+        
+        <!-- Login Form -->
+        <form id="loginForm" class="auth-form">
+          <div class="form-group">
+            <input type="email" id="loginEmail" placeholder="Email address" required>
+          </div>
+          <div class="form-group">
+            <input type="password" id="loginPassword" placeholder="Password" required>
+          </div>
+          <button type="submit" class="auth-btn">Login</button>
+          <div id="loginError" class="error-message"></div>
+        </form>
+        
+        <!-- Register Form -->
+        <form id="registerForm" class="auth-form" style="display: none;">
+          <div class="form-group">
+            <input type="email" id="registerEmail" placeholder="Email address" required>
+          </div>
+          <div class="form-group">
+            <input type="password" id="registerPassword" placeholder="Password (min 6 characters)" required minlength="6">
+          </div>
+          <button type="submit" class="auth-btn">Create Account</button>
+          <div id="registerError" class="error-message"></div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Main App (Hidden initially) -->
+    <div id="appSection" style="display: none;">
+      <!-- User Header -->
+      <div class="user-header">
+        <div class="user-info">
+          <span id="userEmail"></span>
+          <div class="credits-display">
+            💳 <span id="creditsCount">0</span> credits
+            <button onclick="showBuyCredits()" class="buy-credits-btn">Buy Credits</button>
+          </div>
+        </div>
+        <button onclick="logout()" class="logout-btn">Logout</button>
+      </div>
+
+      <header>
+        <h1>🗺️ LeadFinders</h1>
+        <p>€1 per search - Extract 50+ businesses with emails</p>
+      </header>
     
     <div class="search-section">
       <div class="search-box">
@@ -50,9 +101,36 @@
       <div class="results-grid" id="results"></div>
     </div>
     
-    <footer>
-      <p>⚡ Powered by Playwright & Google Maps</p>
-    </footer>
+      <footer>
+        <p>⚡ Powered by Playwright & Google Maps</p>
+      </footer>
+    </div> <!-- End appSection -->
+    
+    <!-- Buy Credits Modal -->
+    <div id="buyCreditsModal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>💳 Buy Credits</h2>
+          <button onclick="closeBuyCredits()" class="close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="credits-packages">
+            <div class="package popular">
+              <h3>Credit Package</h3>
+              <div class="price">€10</div>
+              <div class="credits">100 credits</div>
+              <div class="searches">= 10 searches</div>
+              <div class="bonus">€1 per search</div>
+              <button onclick="buyCredits(100, 10)" class="package-btn">Buy with Stripe</button>
+            </div>
+          </div>
+          <p style="text-align: center; color: var(--text-secondary); margin-top: 20px; font-size: 14px;">
+            💳 Secure payment powered by Stripe<br>
+            🔄 Credits added automatically after payment
+          </p>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="script.js"></script>

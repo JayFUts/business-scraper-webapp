@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Cancelled - LeadFinders</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="auth-section">
+      <div class="auth-card">
+        <h1>❌ Payment Cancelled</h1>
+        <p>Your payment was cancelled. No charges were made to your account.</p>
+        
+        <div style="color: var(--text-secondary); margin: 30px 0;">
+          You can try again anytime to purchase credits and start scraping businesses.
+        </div>
+        
+        <button onclick="goToApp()" class="auth-btn">
+          Back to App
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function goToApp() {
+      window.location.href = '/';
+    }
+  </script>
+</body>
+</html>

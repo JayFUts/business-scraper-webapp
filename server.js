@@ -3,7 +3,12 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { chromium } = require('playwright');
+const session = require('express-session');
 const path = require('path');
+
+// Import our modules
+const { user, usage } = require('./database');
+const { generateToken, requireAuth, optionalAuth } = require('./auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -22,8 +27,24 @@ const limiter = rateLimit({
 
 app.use('/api/scrape', limiter);
 
+// Session middleware
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-session-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  }
+}));
+
 // CORS and JSON middleware
-app.use(cors());
+app.use(cors({
+  credentials: true,
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://app.leadfinders.nl', 'https://business-scraper-webapp-production-1bdd.up.railway.app']
+    : 'http://localhost:3000'
+}));
 app.use(express.json());
 
 // Serve static files
@@ -31,6 +52,213 @@ app.use(express.static('public'));
 
 // Store active scraping sessions
 const activeSessions = new Map();
+
+// ==================== AUTH ENDPOINTS ====================
+
+// Register endpoint
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
+    // Check if user exists
+    const existingUser = await user.findUserByEmail(email);
+    if (existingUser) {
+      return res.status(400).json({ error: 'User already exists' });
+    }
+
+    // Create user
+    const newUser = await user.createUser(email, password);
+    const token = generateToken(newUser.id);
+
+    // Set session
+    req.session.token = token;
+    req.session.userId = newUser.id;
+
+    res.json({
+      success: true,
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        credits: newUser.credits
+      },
+      token
+    });
+  } catch (error) {
+    console.error('Register error:', error);
+    res.status(500).json({ error: 'Registration failed' });
+  }
+});
+
+// Login endpoint
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    // Find user
+    const userData = await user.findUserByEmail(email);
+    if (!userData || !user.verifyPassword(password, userData.password_hash)) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    const token = generateToken(userData.id);
+
+    // Set session
+    req.session.token = token;
+    req.session.userId = userData.id;
+
+    res.json({
+      success: true,
+      user: {
+        id: userData.id,
+        email: userData.email,
+        credits: userData.credits
+      },
+      token
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+// Logout endpoint
+app.post('/api/auth/logout', (req, res) => {
+  req.session.destroy();
+  res.json({ success: true });
+});
+
+// Get current user
+app.get('/api/auth/me', requireAuth, (req, res) => {
+  res.json({
+    user: {
+      id: req.user.id,
+      email: req.user.email,
+      credits: req.user.credits
+    }
+  });
+});
+
+// Get user usage history
+app.get('/api/user/history', requireAuth, async (req, res) => {
+  try {
+    const history = await usage.getUsageHistory(req.user.id, 20);
+    res.json({ history });
+  } catch (error) {
+    console.error('History error:', error);
+    res.status(500).json({ error: 'Failed to get history' });
+  }
+});
+
+// ==================== PAYMENT ENDPOINTS ====================
+
+// Create a pending purchase record
+app.post('/api/payments/create-purchase', requireAuth, async (req, res) => {
+  try {
+    const { credits, amount, email } = req.body;
+    
+    // Validate the payment matches our €10 package
+    if (amount !== 10 || credits !== 100) {
+      return res.status(400).json({ error: 'Invalid payment package' });
+    }
+
+    const purchaseId = Date.now().toString() + '_' + req.user.id;
+    
+    // Store pending purchase in database
+    const db = require('sqlite3').verbose();
+    const database = new db.Database('./leadfinders.db');
+    
+    await new Promise((resolve, reject) => {
+      database.run(`
+        INSERT INTO purchases (id, user_id, credits, amount, status, created_at)
+        VALUES (?, ?, ?, ?, 'pending', datetime('now'))
+      `, [purchaseId, req.user.id, credits, amount], function(err) {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+    
+    database.close();
+    
+    res.json({ purchaseId });
+  } catch (error) {
+    console.error('Create purchase error:', error);
+    res.status(500).json({ error: 'Failed to create purchase' });
+  }
+});
+
+// Complete purchase and add credits (called from success page)
+app.post('/api/payments/complete-purchase', requireAuth, async (req, res) => {
+  try {
+    const { purchaseId, sessionId } = req.body;
+    
+    if (!purchaseId) {
+      return res.status(400).json({ error: 'Purchase ID required' });
+    }
+
+    const db = require('sqlite3').verbose();
+    const database = new db.Database('./leadfinders.db');
+    
+    // Get purchase details
+    const purchase = await new Promise((resolve, reject) => {
+      database.get(`
+        SELECT * FROM purchases 
+        WHERE id = ? AND user_id = ? AND status = 'pending'
+      `, [purchaseId, req.user.id], (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
+      });
+    });
+    
+    if (!purchase) {
+      database.close();
+      return res.status(404).json({ error: 'Purchase not found or already completed' });
+    }
+    
+    // Mark purchase as completed
+    await new Promise((resolve, reject) => {
+      database.run(`
+        UPDATE purchases 
+        SET status = 'completed', stripe_session_id = ?, completed_at = datetime('now')
+        WHERE id = ?
+      `, [sessionId || null, purchaseId], function(err) {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+    
+    database.close();
+    
+    // Add credits to user
+    await user.addCredits(req.user.id, purchase.credits);
+    
+    // Get updated user data
+    const updatedUser = await user.findUserById(req.user.id);
+    
+    res.json({ 
+      success: true, 
+      creditsAdded: purchase.credits,
+      totalCredits: updatedUser.credits
+    });
+    
+  } catch (error) {
+    console.error('Complete purchase error:', error);
+    res.status(500).json({ error: 'Failed to complete purchase' });
+  }
+});
+
+// ==================== SCRAPING ENDPOINTS ====================
 
 // Main scraping function (converted from Electron version)
 async function scrapeBusinesses(searchQuery, sessionId) {
@@ -334,31 +562,74 @@ function updateSessionStatus(sessionId, status) {
 }
 
 // API Routes
-app.post('/api/scrape', async (req, res) => {
-  const { searchQuery } = req.body;
-  
-  if (!searchQuery) {
-    return res.status(400).json({ error: 'Search query is required' });
-  }
-  
-  const sessionId = Date.now().toString();
-  activeSessions.set(sessionId, { 
-    status: 'Starting scraping...', 
-    results: null,
-    startTime: new Date()
-  });
-  
-  // Start scraping in background
-  scrapeBusinesses(searchQuery, sessionId)
-    .then(results => {
-      activeSessions.get(sessionId).results = results;
-      activeSessions.get(sessionId).status = 'Completed';
-    })
-    .catch(error => {
-      activeSessions.get(sessionId).status = `Error: ${error.message}`;
+app.post('/api/scrape', requireAuth, async (req, res) => {
+  try {
+    const { searchQuery } = req.body;
+    
+    if (!searchQuery) {
+      return res.status(400).json({ error: 'Search query is required' });
+    }
+
+    // Check if user has enough credits (10 credits per scrape)
+    const creditsRequired = 10;
+    if (req.user.credits < creditsRequired) {
+      return res.status(402).json({ 
+        error: 'Insufficient credits', 
+        required: creditsRequired,
+        available: req.user.credits 
+      });
+    }
+
+    // Deduct credits first
+    try {
+      await user.deductCredits(req.user.id, creditsRequired);
+    } catch (error) {
+      return res.status(402).json({ error: 'Failed to deduct credits' });
+    }
+    
+    const sessionId = Date.now().toString();
+    activeSessions.set(sessionId, { 
+      status: 'Starting scraping...', 
+      results: null,
+      startTime: new Date(),
+      userId: req.user.id,
+      searchQuery: searchQuery
     });
-  
-  res.json({ sessionId, status: 'Scraping started' });
+    
+    // Start scraping in background
+    scrapeBusinesses(searchQuery, sessionId)
+      .then(async (results) => {
+        activeSessions.get(sessionId).results = results;
+        activeSessions.get(sessionId).status = 'Completed';
+        
+        // Record usage
+        await usage.recordUsage(
+          req.user.id, 
+          searchQuery, 
+          creditsRequired, 
+          results.length, 
+          sessionId
+        );
+      })
+      .catch(async (error) => {
+        activeSessions.get(sessionId).status = `Error: ${error.message}`;
+        
+        // Refund credits on error
+        await user.addCredits(req.user.id, creditsRequired);
+        console.log(`Refunded ${creditsRequired} credits to user ${req.user.id} due to error`);
+      });
+    
+    res.json({ 
+      sessionId, 
+      status: 'Scraping started',
+      creditsUsed: creditsRequired,
+      creditsRemaining: req.user.credits - creditsRequired
+    });
+
+  } catch (error) {
+    console.error('Scrape endpoint error:', error);
+    res.status(500).json({ error: 'Scraping failed' });
+  }
 });
 
 // Get scraping status

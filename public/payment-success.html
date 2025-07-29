@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Success - LeadFinders</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="auth-section">
+      <div class="auth-card">
+        <h1>🎉 Payment Successful!</h1>
+        <p>Your credits are being added to your account...</p>
+        
+        <div id="successMessage" style="display: none;">
+          <div style="color: var(--success); margin: 20px 0;">
+            ✅ <span id="creditsAdded">100</span> credits added successfully!
+          </div>
+          <div style="color: var(--text-secondary); margin-bottom: 30px;">
+            Total credits: <span id="totalCredits">100</span>
+          </div>
+        </div>
+        
+        <div id="errorMessage" style="display: none;">
+          <div style="color: var(--error); margin: 20px 0;">
+            ❌ There was an issue processing your payment. Please contact support.
+          </div>
+        </div>
+        
+        <div id="loading" style="margin: 30px 0;">
+          <div class="spinner" style="margin: 0 auto;"></div>
+        </div>
+        
+        <button onclick="goToApp()" class="auth-btn" id="continueBtn" style="display: none;">
+          Continue to App
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Get purchase ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const purchaseId = urlParams.get('purchase_id');
+    
+    async function completePurchase() {
+      try {
+        if (!purchaseId) {
+          throw new Error('No purchase ID found');
+        }
+
+        const response = await fetch('/api/payments/complete-purchase', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ 
+            purchaseId: purchaseId,
+            sessionId: null // We don't have access to Stripe session ID from the redirect
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Payment completion failed');
+        }
+
+        const data = await response.json();
+        
+        // Hide loading, show success
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('successMessage').style.display = 'block';
+        document.getElementById('continueBtn').style.display = 'block';
+        
+        // Update displayed credits
+        document.getElementById('creditsAdded').textContent = data.creditsAdded;
+        document.getElementById('totalCredits').textContent = data.totalCredits;
+        
+      } catch (error) {
+        console.error('Payment completion error:', error);
+        
+        // Hide loading, show error
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('errorMessage').style.display = 'block';
+        document.getElementById('continueBtn').style.display = 'block';
+      }
+    }
+    
+    function goToApp() {
+      window.location.href = '/';
+    }
+    
+    // Start the completion process when page loads
+    completePurchase();
+  </script>
+</body>
+</html>
