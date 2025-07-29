@@ -13,11 +13,14 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copy package files
-COPY package-webapp.json package.json
-COPY . .
+COPY package.json package.json
+COPY package-lock.json package-lock.json
 
 # Install Node.js dependencies
 RUN npm install
+
+# Copy rest of application
+COPY . .
 
 # Install Playwright browsers
 RUN npx playwright install chromium
