@@ -1,0 +1,55 @@
+# Worker Dockerfile
+FROM node:18-slim AS base
+
+# Install system dependencies for Playwright
+RUN apt-get update && apt-get install -y \
+    libnss3 \
+    libatk-bridge2.0-0 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libgbm1 \
+    libxss1 \
+    libasound2 \
+    libcups2 \
+    libxfixes3 \
+    libcairo2 \
+    libpango-1.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY tsconfig.json ./
+
+# Install all dependencies (including dev for build)
+RUN npm ci && npm cache clean --force
+
+# Copy source code
+COPY src ./src
+
+# Build TypeScript
+RUN npm run build
+
+# Remove dev dependencies after build
+RUN npm ci --only=production && npm cache clean --force
+
+# Create non-root user first
+RUN groupadd --gid 1001 nodejs && \
+    useradd --uid 1001 --gid nodejs --shell /bin/bash --create-home nodejs
+
+# Create logs directory and set ownership
+RUN mkdir -p logs && chown -R nodejs:nodejs /app
+
+# Switch to nodejs user and install Playwright browsers
+USER nodejs
+RUN npx playwright install chromium
+
+# Health check for worker
+HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
+  CMD node -e "const Redis = require('ioredis'); const redis = new Redis(process.env.REDIS_HOST); redis.ping().then(() => process.exit(0)).catch(() => process.exit(1))"
+
+CMD ["npm", "run", "worker"]

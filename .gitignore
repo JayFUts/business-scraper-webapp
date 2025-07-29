@@ -1,0 +1,11 @@
+node_modules
+*.log
+.env
+.DS_Store
+desktop-debug.png
+package-webapp.json
+desktop-app.js
+desktop-ui.html
+mobile-app.js
+mobile-ui.html
+*.screenshot.png
