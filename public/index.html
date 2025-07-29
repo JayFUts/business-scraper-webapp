@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Business Scraper - Google Maps Business Directory</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🗺️ Business Scraper</h1>
+      <p>Extract business information from Google Maps</p>
+    </header>
+    
+    <div class="search-section">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="e.g., restaurants in Amsterdam" value="restaurants in Amsterdam">
+        <button id="searchButton" onclick="startSearch()">
+          <span id="buttonText">Search</span>
+          <div id="loadingSpinner" class="spinner" style="display: none;"></div>
+        </button>
+      </div>
+      
+      <div class="search-info">
+        <p>💡 <strong>Tip:</strong> Be specific with your search (e.g., "Italian restaurants in Rome", "hotels in Paris")</p>
+      </div>
+    </div>
+    
+    <div class="status-section">
+      <div class="status" id="status"></div>
+      <div class="progress-bar" id="progressBar" style="display: none;">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+    
+    <div class="results-section" id="resultsSection" style="display: none;">
+      <div class="results-header">
+        <h2>Found <span id="resultCount">0</span> businesses</h2>
+        <div class="export-buttons">
+          <button onclick="exportResults('csv')" class="export-btn csv-btn">
+            📊 Export CSV
+          </button>
+          <button onclick="exportResults('json')" class="export-btn json-btn">
+            📄 Export JSON
+          </button>
+        </div>
+      </div>
+      
+      <div class="results-grid" id="results"></div>
+    </div>
+    
+    <footer>
+      <p>⚡ Powered by Playwright & Google Maps</p>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
