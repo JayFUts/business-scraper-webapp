@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copy package files
-COPY package-webapp.json package.json
+COPY package.json package.json
 COPY . .
 
 # Install Node.js dependencies
