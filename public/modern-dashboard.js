@@ -46,18 +46,28 @@ function setupEventListeners() {
         });
     });
 
-    // Form submissions
+    // Form submissions with active check
     if (loginForm) {
         loginForm.addEventListener('submit', (e) => {
-            console.log('Login form submitted');
-            handleLogin(e);
+            e.preventDefault();
+            if (loginForm.classList.contains('active')) {
+                console.log('Login form submitted (active)');
+                handleLogin(e);
+            } else {
+                console.log('Login form submitted but not active - ignoring');
+            }
         });
         console.log('Login form listener added');
     }
     if (registerForm) {
         registerForm.addEventListener('submit', (e) => {
-            console.log('Register form submitted');
-            handleRegister(e);
+            e.preventDefault();
+            if (registerForm.classList.contains('active')) {
+                console.log('Register form submitted (active)');
+                handleRegister(e);
+            } else {
+                console.log('Register form submitted but not active - ignoring');
+            }
         });
         console.log('Register form listener added');
     }
@@ -226,7 +236,6 @@ function showDashboard() {
 
 // Handle login
 async function handleLogin(e) {
-    e.preventDefault();
     
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
@@ -282,7 +291,6 @@ async function handleLogin(e) {
 
 // Handle registration
 async function handleRegister(e) {
-    e.preventDefault();
     console.log('handleRegister called');
     
     const email = document.getElementById('registerEmail').value;

@@ -163,19 +163,20 @@ body {
 }
 
 .auth-form {
-    display: none;
+    display: none !important;
 }
 
 .auth-form.active {
     display: block !important;
 }
 
-/* Default login form visible */
-#loginForm {
-    display: block;
+/* Override: Only show active forms */
+#loginForm:not(.active),
+#registerForm:not(.active) {
+    display: none !important;
 }
 
-/* Ensure register form shows when active */
+#loginForm.active,
 #registerForm.active {
     display: block !important;
 }
