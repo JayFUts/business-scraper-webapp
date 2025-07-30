@@ -175,6 +175,11 @@ body {
     display: block;
 }
 
+/* Ensure register form shows when active */
+#registerForm.active {
+    display: block !important;
+}
+
 /* Ensure interactive elements are clickable */
 .auth-tab,
 .auth-form input,

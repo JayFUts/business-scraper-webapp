@@ -48,11 +48,17 @@ function setupEventListeners() {
 
     // Form submissions
     if (loginForm) {
-        loginForm.addEventListener('submit', handleLogin);
+        loginForm.addEventListener('submit', (e) => {
+            console.log('Login form submitted');
+            handleLogin(e);
+        });
         console.log('Login form listener added');
     }
     if (registerForm) {
-        registerForm.addEventListener('submit', handleRegister);
+        registerForm.addEventListener('submit', (e) => {
+            console.log('Register form submitted');
+            handleRegister(e);
+        });
         console.log('Register form listener added');
     }
 
@@ -131,8 +137,11 @@ function switchAuthTab(tab) {
             (tab === 'register' && form.id === 'registerForm')) {
             form.classList.add('active');
             console.log('Activated form:', form.id);
+            console.log('Form display after activation:', getComputedStyle(form).display);
+            console.log('Form classes:', form.className);
         } else {
             form.classList.remove('active');
+            console.log('Deactivated form:', form.id);
         }
     });
 }
@@ -274,11 +283,14 @@ async function handleLogin(e) {
 // Handle registration
 async function handleRegister(e) {
     e.preventDefault();
+    console.log('handleRegister called');
     
     const email = document.getElementById('registerEmail').value;
     const password = document.getElementById('registerPassword').value;
     const errorDiv = document.getElementById('registerError');
     const submitButton = registerForm.querySelector('button[type="submit"]');
+    
+    console.log('Register attempt:', { email, password: password.length > 0 ? '***' : 'empty' });
     
     // Prevent multiple submissions
     if (submitButton.disabled) return;
