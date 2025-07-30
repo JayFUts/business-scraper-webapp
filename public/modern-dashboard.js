@@ -176,6 +176,22 @@ function showAuth() {
     
     // Ensure login form is active by default
     switchAuthTab('login');
+    
+    // Test element visibility and clickability
+    setTimeout(() => {
+        const loginTab = document.querySelector('[data-tab="login"]');
+        const registerTab = document.querySelector('[data-tab="register"]');
+        const emailInput = document.getElementById('loginEmail');
+        
+        console.log('Login tab clickable:', loginTab && getComputedStyle(loginTab).pointerEvents !== 'none');
+        console.log('Register tab clickable:', registerTab && getComputedStyle(registerTab).pointerEvents !== 'none');
+        console.log('Email input visible:', emailInput && getComputedStyle(emailInput).display !== 'none');
+        
+        if (loginTab) {
+            console.log('Login tab z-index:', getComputedStyle(loginTab).zIndex);
+            console.log('Login tab position:', getComputedStyle(loginTab).position);
+        }
+    }, 100);
 }
 
 // Show dashboard

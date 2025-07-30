@@ -87,6 +87,7 @@ body {
     background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     position: relative;
     overflow: hidden;
+    z-index: 10;
 }
 
 .auth-container {
@@ -102,6 +103,8 @@ body {
     padding: var(--space-2xl);
     box-shadow: var(--shadow-2xl);
     backdrop-filter: blur(10px);
+    position: relative;
+    z-index: 20;
 }
 
 .auth-logo {
@@ -172,6 +175,22 @@ body {
     display: block;
 }
 
+/* Ensure interactive elements are clickable */
+.auth-tab,
+.auth-form input,
+.auth-form button,
+.btn {
+    position: relative;
+    z-index: 100;
+    pointer-events: auto;
+}
+
+/* Fix any potential overlay issues */
+.auth-form.active {
+    position: relative;
+    z-index: 50;
+}
+
 .form-group {
     margin-bottom: var(--space-md);
 }
@@ -230,7 +249,8 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 0;
+    z-index: 1;
+    pointer-events: none;
 }
 
 .gradient-orb {
