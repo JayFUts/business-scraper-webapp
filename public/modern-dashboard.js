@@ -582,11 +582,17 @@ async function logout() {
 
 // Start search
 async function startSearch() {
-    const query = searchInput.value.trim();
+    const searchInputElement = document.getElementById('searchInput');
+    const query = searchInputElement ? searchInputElement.value.trim() : '';
+    
+    console.log('Search started with query:', query);
     
     if (!query) {
-        shakeElement(searchInput);
-        searchInput.focus();
+        console.log('No query provided');
+        if (searchInputElement) {
+            shakeElement(searchInputElement);
+            searchInputElement.focus();
+        }
         return;
     }
     
@@ -597,12 +603,18 @@ async function startSearch() {
     }
     
     // Update UI
-    searchButton.disabled = true;
-    document.getElementById('buttonText').style.display = 'none';
-    document.getElementById('loadingSpinner').style.display = 'block';
+    const searchButtonElement = document.getElementById('searchButton');
+    const buttonTextElement = document.getElementById('buttonText');
+    const loadingSpinnerElement = document.getElementById('loadingSpinner');
+    const statusContainerElement = document.getElementById('statusContainer');
+    const resultsSectionElement = document.getElementById('resultsSection');
     
-    statusContainer.style.display = 'block';
-    resultsSection.style.display = 'none';
+    if (searchButtonElement) searchButtonElement.disabled = true;
+    if (buttonTextElement) buttonTextElement.style.display = 'none';
+    if (loadingSpinnerElement) loadingSpinnerElement.style.display = 'block';
+    
+    if (statusContainerElement) statusContainerElement.style.display = 'block';
+    if (resultsSectionElement) resultsSectionElement.style.display = 'none';
     
     updateStatus('Initializing search...', 0);
     
@@ -820,9 +832,13 @@ async function buyCredits(credits, amount) {
 
 // Helper functions
 function resetSearchButton() {
-    searchButton.disabled = false;
-    document.getElementById('buttonText').style.display = 'inline';
-    document.getElementById('loadingSpinner').style.display = 'none';
+    const searchButtonElement = document.getElementById('searchButton');
+    const buttonTextElement = document.getElementById('buttonText');
+    const loadingSpinnerElement = document.getElementById('loadingSpinner');
+    
+    if (searchButtonElement) searchButtonElement.disabled = false;
+    if (buttonTextElement) buttonTextElement.style.display = 'inline';
+    if (loadingSpinnerElement) loadingSpinnerElement.style.display = 'none';
 }
 
 function shakeElement(element) {
