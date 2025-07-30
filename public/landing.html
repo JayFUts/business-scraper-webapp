@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeadFinders - Google Maps Business Scraper</title>
+    <link rel="stylesheet" href="modern-styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <svg class="logo" viewBox="0 0 40 40" fill="none">
+                    <circle cx="20" cy="20" r="18" stroke="url(#gradient)" stroke-width="4"/>
+                    <path d="M20 10 L20 30 M10 20 L30 20" stroke="url(#gradient)" stroke-width="3" stroke-linecap="round"/>
+                    <defs>
+                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span class="brand-name">LeadFinders</span>
+            </div>
+            <div class="nav-links">
+                <a href="#features" class="nav-link">Features</a>
+                <a href="#how-it-works" class="nav-link">How It Works</a>
+                <a href="#pricing" class="nav-link">Pricing</a>
+                <a href="/dashboard" class="nav-link nav-cta">Sign In</a>
+            </div>
+            <div class="mobile-menu-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-background">
+            <div class="gradient-orb gradient-orb-1"></div>
+            <div class="gradient-orb gradient-orb-2"></div>
+            <div class="grid-pattern"></div>
+        </div>
+        <div class="hero-content">
+            <div class="hero-badge">
+                <span class="badge-dot"></span>
+                <span>Trusted by 500+ businesses</span>
+            </div>
+            <h1 class="hero-title">
+                Find Your Next Customers on
+                <span class="gradient-text">Google Maps</span>
+            </h1>
+            <p class="hero-subtitle">
+                Extract 50+ business contacts from any Google Maps search in seconds. 
+                Get emails, phone numbers, and more with our powerful scraping tool.
+            </p>
+            <div class="hero-actions">
+                <a href="/dashboard" class="btn btn-primary btn-large">
+                    Start Free Trial
+                    <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                        <path d="M7 10L13 10M13 10L10 7M13 10L10 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </a>
+                <a href="#demo" class="btn btn-secondary btn-large">
+                    Watch Demo
+                    <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                        <path d="M10 18C14.4183 18 18 14.4183 18 10C18 5.58172 14.4183 2 10 2C5.58172 2 2 5.58172 2 10C2 14.4183 5.58172 18 10 18Z" stroke="currentColor" stroke-width="2"/>
+                        <path d="M8 7L13 10L8 13V7Z" fill="currentColor"/>
+                    </svg>
+                </a>
+            </div>
+            <div class="hero-stats">
+                <div class="stat">
+                    <div class="stat-number">50+</div>
+                    <div class="stat-label">Businesses per search</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">€0.10</div>
+                    <div class="stat-label">Per business found</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">2min</div>
+                    <div class="stat-label">Average search time</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Everything You Need to Find Leads</h2>
+                <p class="section-subtitle">Powerful features designed to help you grow your business</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M21 10C21 17 12 23 12 23C12 23 3 17 3 10C3 5.58172 6.58172 2 11 2C15.4183 2 19 5.58172 19 10Z" stroke="currentColor" stroke-width="2"/>
+                            <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Google Maps Integration</h3>
+                    <p class="feature-description">
+                        Search any business type in any location. Our tool extracts data directly from Google Maps with high accuracy.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M3 8L10.89 13.26C11.2187 13.4793 11.6049 13.5963 12 13.5963C12.3951 13.5963 12.7813 13.4793 13.11 13.26L21 8M5 19H19C19.5304 19 20.0391 18.7893 20.4142 18.4142C20.7893 18.0391 21 17.5304 21 17V7C21 6.46957 20.7893 5.96086 20.4142 5.58579C20.0391 5.21071 19.5304 5 19 5H5C4.46957 5 3.96086 5.21071 3.58579 5.58579C3.21071 5.96086 3 6.46957 3 7V17C3 17.5304 3.21071 18.0391 3.58579 18.4142C3.96086 18.7893 4.46957 19 5 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Email Extraction</h3>
+                    <p class="feature-description">
+                        Automatically visits business websites to find and extract email addresses. No manual work required.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M9 11H15M9 15H15M17 3H7C5.89543 3 5 3.89543 5 5V19C5 20.1046 5.89543 21 7 21H17C18.1046 21 19 20.1046 19 19V5C19 3.89543 18.1046 3 17 3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Export Options</h3>
+                    <p class="feature-description">
+                        Download your results as CSV or JSON. Perfect for importing into your CRM or email marketing tools.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="currentColor" stroke-width="2"/>
+                            <path d="M12 3V9M12 15V21M21 12H15M9 12H3M18.364 5.636L14.121 9.879M9.879 14.121L5.636 18.364M18.364 18.364L14.121 14.121M9.879 9.879L5.636 5.636" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Real-time Progress</h3>
+                    <p class="feature-description">
+                        Track your scraping progress in real-time. See results as they're found with live updates.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M12 2L2 7V12C2 16.5 4.5 20.74 12 22C19.5 20.74 22 16.5 22 12V7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Secure & Private</h3>
+                    <p class="feature-description">
+                        Your searches are private and secure. We don't store or share your scraped data.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Lightning Fast</h3>
+                    <p class="feature-description">
+                        Get 50+ business contacts in under 2 minutes. Our optimized scraper works at maximum speed.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section id="how-it-works" class="how-it-works">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">How It Works</h2>
+                <p class="section-subtitle">Start finding leads in 3 simple steps</p>
+            </div>
+            <div class="steps-container">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3 class="step-title">Search on Google Maps</h3>
+                        <p class="step-description">
+                            Enter any business type and location. For example: "restaurants in Amsterdam" or "dentists in Berlin".
+                        </p>
+                    </div>
+                </div>
+                <div class="step-connector"></div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3 class="step-title">We Extract the Data</h3>
+                        <p class="step-description">
+                            Our tool automatically scrapes business names, addresses, phone numbers, websites, and finds email addresses.
+                        </p>
+                    </div>
+                </div>
+                <div class="step-connector"></div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3 class="step-title">Export Your Leads</h3>
+                        <p class="step-description">
+                            Download your results as CSV or JSON. Import directly into your CRM or start your outreach campaign.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="pricing">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Simple, Transparent Pricing</h2>
+                <p class="section-subtitle">Only pay for what you use. No subscriptions required.</p>
+            </div>
+            <div class="pricing-cards">
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3 class="pricing-title">Starter Pack</h3>
+                        <div class="pricing-price">
+                            <span class="currency">€</span>
+                            <span class="amount">10</span>
+                        </div>
+                        <p class="pricing-description">100 credits</p>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>
+                            <svg class="check-icon" viewBox="0 0 20 20" fill="none">
+                                <path d="M16.667 5L7.5 14.167L3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            10 searches (10 credits each)
+                        </li>
+                        <li>
+                            <svg class="check-icon" viewBox="0 0 20 20" fill="none">
+                                <path d="M16.667 5L7.5 14.167L3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            50+ results per search
+                        </li>
+                        <li>
+                            <svg class="check-icon" viewBox="0 0 20 20" fill="none">
+                                <path d="M16.667 5L7.5 14.167L3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Email extraction included
+                        </li>
+                        <li>
+                            <svg class="check-icon" viewBox="0 0 20 20" fill="none">
+                                <path d="M16.667 5L7.5 14.167L3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            CSV & JSON export
+                        </li>
+                        <li>
+                            <svg class="check-icon" viewBox="0 0 20 20" fill="none">
+                                <path d="M16.667 5L7.5 14.167L3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            No expiration
+                        </li>
+                    </ul>
+                    <a href="/dashboard" class="btn btn-primary btn-block">Get Started</a>
+                </div>
+                <div class="pricing-card featured">
+                    <div class="pricing-badge">Most Popular</div>
+                    <div class="pricing-header">
+                        <h3 class="pricing-title">Business Pack</h3>
+                        <div class="pricing-price">
+                            <span class="currency">€</span>
+                            <span class="amount">25</span>
+                        </div>
+                        <p class="pricing-description">300 credits</p>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>
+                            <svg class="check-icon" viewBox="0 0 20 20" fill="none">
+                                <path d="M16.667 5L7.5 14.167L3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            30 searches + 20% bonus
+                        </li>
+                        <li>
+                            <svg class="check-icon" viewBox="0 0 20 20" fill="none">
+                                <path d="M16.667 5L7.5 14.167L3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Everything in Starter
+                        </li>
+                        <li>
+                            <svg class="check-icon" viewBox="0 0 20 20" fill="none">
+                                <path d="M16.667 5L7.5 14.167L3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Priority support
+                        </li>
+                        <li>
+                            <svg class="check-icon" viewBox="0 0 20 20" fill="none">
+                                <path d="M16.667 5L7.5 14.167L3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Bulk export features
+                        </li>
+                        <li>
+                            <svg class="check-icon" viewBox="0 0 20 20" fill="none">
+                                <path d="M16.667 5L7.5 14.167L3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Advanced filters coming soon
+                        </li>
+                    </ul>
+                    <a href="/dashboard" class="btn btn-primary btn-block">Get Started</a>
+                </div>
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3 class="pricing-title">Enterprise</h3>
+                        <div class="pricing-price">
+                            <span class="amount">Custom</span>
+                        </div>
+                        <p class="pricing-description">Volume pricing</p>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>
+                            <svg class="check-icon" viewBox="0 0 20 20" fill="none">
+                                <path d="M16.667 5L7.5 14.167L3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            1000+ credits per month
+                        </li>
+                        <li>
+                            <svg class="check-icon" viewBox="0 0 20 20" fill="none">
+                                <path d="M16.667 5L7.5 14.167L3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            API access
+                        </li>
+                        <li>
+                            <svg class="check-icon" viewBox="0 0 20 20" fill="none">
+                                <path d="M16.667 5L7.5 14.167L3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Dedicated support
+                        </li>
+                        <li>
+                            <svg class="check-icon" viewBox="0 0 20 20" fill="none">
+                                <path d="M16.667 5L7.5 14.167L3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Custom integrations
+                        </li>
+                        <li>
+                            <svg class="check-icon" viewBox="0 0 20 20" fill="none">
+                                <path d="M16.667 5L7.5 14.167L3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            SLA guarantee
+                        </li>
+                    </ul>
+                    <a href="mailto:support@leadfinders.nl" class="btn btn-secondary btn-block">Contact Sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <div class="cta-content">
+                <h2 class="cta-title">Ready to Find Your Next Customers?</h2>
+                <p class="cta-subtitle">Join 500+ businesses using LeadFinders to grow faster</p>
+                <a href="/dashboard" class="btn btn-primary btn-large">
+                    Start Free Trial
+                    <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                        <path d="M7 10L13 10M13 10L10 7M13 10L10 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <svg class="logo" viewBox="0 0 40 40" fill="none">
+                        <circle cx="20" cy="20" r="18" stroke="url(#gradient-footer)" stroke-width="4"/>
+                        <path d="M20 10 L20 30 M10 20 L30 20" stroke="url(#gradient-footer)" stroke-width="3" stroke-linecap="round"/>
+                        <defs>
+                            <linearGradient id="gradient-footer" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <span class="brand-name">LeadFinders</span>
+                </div>
+                <div class="footer-links">
+                    <a href="/terms" class="footer-link">Terms of Service</a>
+                    <a href="/privacy" class="footer-link">Privacy Policy</a>
+                    <a href="mailto:support@leadfinders.nl" class="footer-link">Contact</a>
+                </div>
+                <div class="footer-copyright">
+                    © 2024 LeadFinders. All rights reserved.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="landing.js"></script>
+</body>
+</html>

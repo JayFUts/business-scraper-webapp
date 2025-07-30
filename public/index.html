@@ -3,136 +3,315 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Business Scraper - Google Maps Business Directory</title>
-  <link rel="stylesheet" href="styles.css">
+  <title>LeadFinders - Dashboard</title>
+  <link rel="stylesheet" href="modern-dashboard.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="container">
-    <!-- Auth Section -->
-    <div id="authSection" class="auth-section">
+  <!-- Auth Section -->
+  <div id="authSection" class="auth-wrapper">
+    <div class="auth-container">
       <div class="auth-card">
-        <h1>🗺️ LeadFinders</h1>
-        <p>Professional business data from Google Maps</p>
+        <div class="auth-logo">
+          <svg class="logo" viewBox="0 0 40 40" fill="none">
+            <circle cx="20" cy="20" r="18" stroke="url(#gradient)" stroke-width="4"/>
+            <path d="M20 10 L20 30 M10 20 L30 20" stroke="url(#gradient)" stroke-width="3" stroke-linecap="round"/>
+            <defs>
+              <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <h1 class="auth-title">Welcome back</h1>
+        <p class="auth-subtitle">Sign in to access your dashboard</p>
         
         <div class="auth-tabs">
-          <button class="auth-tab active" onclick="showLogin()">Login</button>
-          <button class="auth-tab" onclick="showRegister()">Register</button>
+          <button class="auth-tab active" data-tab="login">Sign In</button>
+          <button class="auth-tab" data-tab="register">Create Account</button>
         </div>
         
         <!-- Login Form -->
-        <form id="loginForm" class="auth-form">
+        <form id="loginForm" class="auth-form active">
           <div class="form-group">
-            <input type="email" id="loginEmail" placeholder="Email address" required>
+            <label for="loginEmail">Email</label>
+            <input type="email" id="loginEmail" placeholder="you@example.com" required>
           </div>
           <div class="form-group">
-            <input type="password" id="loginPassword" placeholder="Password" required>
+            <label for="loginPassword">Password</label>
+            <input type="password" id="loginPassword" placeholder="Enter your password" required>
           </div>
-          <button type="submit" class="auth-btn">Login</button>
+          <button type="submit" class="btn btn-primary btn-block">
+            Sign In
+            <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+              <path d="M7 10L13 10M13 10L10 7M13 10L10 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
           <div id="loginError" class="error-message"></div>
         </form>
         
         <!-- Register Form -->
-        <form id="registerForm" class="auth-form" style="display: none;">
+        <form id="registerForm" class="auth-form">
           <div class="form-group">
-            <input type="email" id="registerEmail" placeholder="Email address" required>
+            <label for="registerEmail">Email</label>
+            <input type="email" id="registerEmail" placeholder="you@example.com" required>
           </div>
           <div class="form-group">
-            <input type="password" id="registerPassword" placeholder="Password (min 6 characters)" required minlength="6">
+            <label for="registerPassword">Password</label>
+            <input type="password" id="registerPassword" placeholder="Min 6 characters" required minlength="6">
           </div>
-          <button type="submit" class="auth-btn">Create Account</button>
+          <button type="submit" class="btn btn-primary btn-block">
+            Create Account
+            <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+              <path d="M7 10L13 10M13 10L10 7M13 10L10 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
           <div id="registerError" class="error-message"></div>
         </form>
+        
+        <div class="auth-footer">
+          <p>By continuing, you agree to our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a></p>
+        </div>
+      </div>
+      
+      <div class="auth-background">
+        <div class="gradient-orb gradient-orb-1"></div>
+        <div class="gradient-orb gradient-orb-2"></div>
       </div>
     </div>
+  </div>
 
-    <!-- Main App (Hidden initially) -->
-    <div id="appSection" style="display: none;">
-      <!-- User Header -->
-      <div class="user-header">
-        <div class="user-info">
-          <span id="userEmail"></span>
-          <div class="credits-display">
-            💳 <span id="creditsCount">0</span> credits
-            <button onclick="showBuyCredits()" class="buy-credits-btn">Buy Credits</button>
+  <!-- Main Dashboard -->
+  <div id="appSection" class="dashboard-wrapper" style="display: none;">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <svg class="logo" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="18" stroke="url(#gradient-sidebar)" stroke-width="4"/>
+          <path d="M20 10 L20 30 M10 20 L30 20" stroke="url(#gradient-sidebar)" stroke-width="3" stroke-linecap="round"/>
+          <defs>
+            <linearGradient id="gradient-sidebar" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+              <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <span class="brand-name">LeadFinders</span>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-item active">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none">
+            <path d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Search</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none">
+            <path d="M12 8V12M12 16H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>History</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none">
+            <path d="M10.325 4.317C10.751 2.561 13.249 2.561 13.675 4.317C13.7389 4.5808 13.8642 4.82578 14.0407 5.032C14.2172 5.23822 14.4399 5.39985 14.6907 5.50375C14.9414 5.60764 15.2132 5.65085 15.4838 5.62987C15.7544 5.60889 16.0162 5.5243 16.248 5.383C17.791 4.443 19.558 6.209 18.618 7.753C18.4769 7.98466 18.3924 8.24634 18.3715 8.51677C18.3506 8.78721 18.3938 9.05877 18.4975 9.30938C18.6013 9.55999 18.7627 9.78258 18.9687 9.95905C19.1747 10.1355 19.4194 10.2609 19.683 10.325C21.439 10.751 21.439 13.249 19.683 13.675C19.4192 13.7389 19.1742 13.8642 18.968 14.0407C18.7618 14.2172 18.6001 14.4399 18.4963 14.6907C18.3924 14.9414 18.3491 15.2132 18.3701 15.4838C18.3911 15.7544 18.4757 16.0162 18.617 16.248C19.557 17.791 17.791 19.558 16.247 18.618C16.0153 18.4769 15.7537 18.3924 15.4832 18.3715C15.2128 18.3506 14.9412 18.3938 14.6906 18.4975C14.44 18.6013 14.2174 18.7627 14.0409 18.9687C13.8645 19.1747 13.7391 19.4194 13.675 19.683C13.249 21.439 10.751 21.439 10.325 19.683C10.2611 19.4192 10.1358 19.1742 9.95929 18.968C9.7828 18.7618 9.56011 18.6001 9.30935 18.4963C9.05859 18.3924 8.78683 18.3491 8.51621 18.3701C8.24559 18.3911 7.98375 18.4757 7.752 18.617C6.209 19.557 4.442 17.791 5.382 16.247C5.5231 16.0153 5.60755 15.7537 5.62848 15.4832C5.64942 15.2128 5.60624 14.9412 5.50247 14.6906C5.3987 14.44 5.23726 14.2174 5.03127 14.0409C4.82529 13.8645 4.58056 13.7391 4.317 13.675C2.561 13.249 2.561 10.751 4.317 10.325C4.5808 10.2611 4.82578 10.1358 5.032 9.95929C5.23822 9.7828 5.39985 9.56011 5.50375 9.30935C5.60764 9.05859 5.65085 8.78683 5.62987 8.51621C5.60889 8.24559 5.5243 7.98375 5.383 7.752C4.443 6.209 6.209 4.442 7.753 5.382C8.753 5.99 10.049 5.452 10.325 4.317Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M15 12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12C9 10.3431 10.3431 9 12 9C13.6569 9 15 10.3431 15 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Settings</span>
+        </a>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <div class="user-avatar">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="user-details">
+            <span class="user-email" id="userEmail"></span>
+            <button onclick="logout()" class="logout-link">Sign out</button>
           </div>
         </div>
-        <button onclick="logout()" class="logout-btn">Logout</button>
+      </div>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Top Bar -->
+      <div class="top-bar">
+        <div class="mobile-menu-toggle">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        
+        <div class="credits-widget">
+          <div class="credits-info">
+            <svg class="credits-icon" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L2 7V12C2 16.5 4.5 20.74 12 22C19.5 20.74 22 16.5 22 12V7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M12 8V12M12 16H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="credits-label">Credits:</span>
+            <span class="credits-value" id="creditsCount">0</span>
+          </div>
+          <button onclick="showBuyCredits()" class="btn btn-primary btn-small">
+            <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+              <path d="M10 5V15M5 10H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Buy Credits
+          </button>
+        </div>
       </div>
 
-      <header>
-        <h1>🗺️ LeadFinders</h1>
-        <p>€1 per search - Extract 50+ businesses with emails</p>
-      </header>
-    
-    <div class="search-section">
-      <div class="search-box">
-        <input type="text" id="searchInput" placeholder="e.g., restaurants in Amsterdam" value="restaurants in Amsterdam">
-        <button id="searchButton" onclick="startSearch()">
-          <span id="buttonText">Search</span>
-          <div id="loadingSpinner" class="spinner" style="display: none;"></div>
-        </button>
-      </div>
-      
-      <div class="search-info">
-        <p>💡 <strong>Tip:</strong> Be specific with your search (e.g., "Italian restaurants in Rome", "hotels in Paris")</p>
-      </div>
-    </div>
-    
-    <div class="status-section">
-      <div class="status" id="status"></div>
-      <div class="progress-bar" id="progressBar" style="display: none;">
-        <div class="progress-fill" id="progressFill"></div>
-      </div>
-    </div>
-    
-    <div class="results-section" id="resultsSection" style="display: none;">
-      <div class="results-header">
-        <h2>Found <span id="resultCount">0</span> businesses</h2>
-        <div class="export-buttons">
-          <button onclick="exportResults('csv')" class="export-btn csv-btn">
-            📊 Export CSV
-          </button>
-          <button onclick="exportResults('json')" class="export-btn json-btn">
-            📄 Export JSON
-          </button>
+      <!-- Search Section -->
+      <div class="search-container">
+        <div class="search-header">
+          <h1 class="page-title">Find Business Leads</h1>
+          <p class="page-subtitle">Search Google Maps and extract 50+ businesses with contact information</p>
         </div>
-      </div>
-      
-      <div class="results-grid" id="results"></div>
-    </div>
     
-      <footer>
-        <p>⚡ Powered by Playwright & Google Maps</p>
-      </footer>
-    </div> <!-- End appSection -->
-    
-    <!-- Buy Credits Modal -->
-    <div id="buyCreditsModal" class="modal" style="display: none;">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>💳 Buy Credits</h2>
-          <button onclick="closeBuyCredits()" class="close-btn">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div class="credits-packages">
-            <div class="package popular">
-              <h3>Credit Package</h3>
-              <div class="price">€10</div>
-              <div class="credits">100 credits</div>
-              <div class="searches">= 10 searches</div>
-              <div class="bonus">€1 per search</div>
-              <button onclick="buyCredits(100, 10)" class="package-btn">Buy with Stripe</button>
+        <div class="search-card">
+          <div class="search-input-group">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none">
+              <path d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <input type="text" id="searchInput" class="search-input" placeholder="e.g., restaurants in Amsterdam" value="restaurants in Amsterdam">
+            <button id="searchButton" onclick="startSearch()" class="btn btn-primary search-btn">
+              <span id="buttonText">Search</span>
+              <div id="loadingSpinner" class="spinner" style="display: none;"></div>
+            </button>
+          </div>
+          
+          <div class="search-tips">
+            <div class="tip">
+              <svg class="tip-icon" viewBox="0 0 20 20" fill="none">
+                <path d="M9 11H11M9 7H11M9 15H11M19 10C19 14.9706 14.9706 19 10 19C1.02944 19 1 14.9706 1 10C1 5.02944 1.02944 1 10 1C14.9706 1 19 5.02944 19 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>Be specific with your search (e.g., "Italian restaurants in Rome")</span>
             </div>
           </div>
-          <p style="text-align: center; color: var(--text-secondary); margin-top: 20px; font-size: 14px;">
-            💳 Secure payment powered by Stripe<br>
-            🔄 Credits added automatically after payment
-          </p>
+        </div>
+      </div>
+    
+      <!-- Status Section -->
+      <div class="status-container" id="statusContainer" style="display: none;">
+        <div class="status-card">
+          <div class="status-content">
+            <div class="status-icon">
+              <div class="status-spinner"></div>
+            </div>
+            <div class="status-text">
+              <h3 class="status-title">Searching businesses...</h3>
+              <p class="status-message" id="status"></p>
+            </div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+        </div>
+      </div>
+    
+      <!-- Results Section -->
+      <div class="results-container" id="resultsSection" style="display: none;">
+        <div class="results-header">
+          <div class="results-stats">
+            <h2 class="results-title">Search Results</h2>
+            <p class="results-count">Found <span id="resultCount">0</span> businesses</p>
+          </div>
+          <div class="export-buttons">
+            <button onclick="exportResults('csv')" class="btn btn-secondary">
+              <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                <path d="M3 17L3 13M3 13L7 13M3 13L7 17M17 3L17 7M17 7L13 7M17 7L13 3M7 3L3 3L3 7M17 17L17 13L13 13M13 17L17 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Export CSV
+            </button>
+            <button onclick="exportResults('json')" class="btn btn-secondary">
+              <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                <path d="M9 12H15M9 16H15M13 8L11 6L9 8M5 20H19C19.5304 20 20.0391 19.7893 20.4142 19.4142C20.7893 19.0391 21 18.5304 21 18V6C21 5.46957 20.7893 4.96086 20.4142 4.58579C20.0391 4.21071 19.5304 4 19 4H5C4.46957 4 3.96086 4.21071 3.58579 4.58579C3.21071 4.96086 3 5.46957 3 6V18C3 18.5304 3.21071 19.0391 3.58579 19.4142C3.96086 19.7893 4.46957 20 5 20Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Export JSON
+            </button>
+          </div>
+        </div>
+        
+        <div class="results-grid" id="results"></div>
+      </div>
+    </main>
+  </div>
+    
+    
+  <!-- Buy Credits Modal -->
+  <div id="buyCreditsModal" class="modal" style="display: none;">
+    <div class="modal-overlay" onclick="closeBuyCredits()"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Buy Credits</h2>
+        <button onclick="closeBuyCredits()" class="modal-close">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="pricing-grid">
+          <div class="pricing-card featured">
+            <div class="pricing-badge">Best Value</div>
+            <h3 class="pricing-title">Starter Pack</h3>
+            <div class="pricing-price">
+              <span class="currency">€</span>
+              <span class="amount">10</span>
+            </div>
+            <div class="pricing-details">
+              <div class="pricing-item">
+                <svg class="check-icon" viewBox="0 0 20 20" fill="none">
+                  <path d="M16.667 5L7.5 14.167L3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>100 credits</span>
+              </div>
+              <div class="pricing-item">
+                <svg class="check-icon" viewBox="0 0 20 20" fill="none">
+                  <path d="M16.667 5L7.5 14.167L3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>10 searches</span>
+              </div>
+              <div class="pricing-item">
+                <svg class="check-icon" viewBox="0 0 20 20" fill="none">
+                  <path d="M16.667 5L7.5 14.167L3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>€1 per search</span>
+              </div>
+            </div>
+            <button onclick="buyCredits(100, 10)" class="btn btn-primary btn-block">
+              <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                <path d="M3 4H17L15.5 13H4.5L3 4ZM3 4L2.25 1.5M7 17.5C7 18.3284 6.32843 19 5.5 19C4.67157 19 4 18.3284 4 17.5M15 17.5C15 18.3284 14.3284 19 13.5 19C12.6716 19 12 18.3284 12 17.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Buy with Stripe
+            </button>
+          </div>
+        </div>
+        <div class="payment-info">
+          <div class="payment-item">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L2 7V12C2 16.5 4.5 20.74 12 22C19.5 20.74 22 16.5 22 12V7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Secure payment via Stripe</span>
+          </div>
+          <div class="payment-item">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Instant credit delivery</span>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <script src="modern-dashboard.js"></script>
 </body>
 </html>

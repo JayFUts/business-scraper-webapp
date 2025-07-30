@@ -50,6 +50,16 @@ app.use(express.json());
 // Serve static files
 app.use(express.static('public'));
 
+// Serve landing page as the default route
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'landing.html'));
+});
+
+// Serve dashboard for authenticated users
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // Store active scraping sessions
 const activeSessions = new Map();
 
