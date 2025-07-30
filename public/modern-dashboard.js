@@ -73,10 +73,22 @@ function setupEventListeners() {
     }
 
     // Search functionality
-    searchInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            startSearch();
-        }
+    if (searchInput) {
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                startSearch();
+            }
+        });
+    }
+    
+    // Navigation items
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const navText = item.querySelector('span').textContent;
+            handleNavigation(navText, item);
+        });
     });
 
     // Mobile menu toggle
@@ -154,6 +166,168 @@ function switchAuthTab(tab) {
             console.log('Deactivated form:', form.id);
         }
     });
+}
+
+// Handle navigation
+function handleNavigation(section, clickedItem) {
+    console.log('Navigation clicked:', section);
+    
+    // Update active nav item
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => item.classList.remove('active'));
+    clickedItem.classList.add('active');
+    
+    // Get main content sections
+    const searchContainer = document.querySelector('.search-container');
+    const statusContainer = document.getElementById('statusContainer');
+    const resultsSection = document.getElementById('resultsSection');
+    
+    // Hide all sections first
+    if (searchContainer) searchContainer.style.display = 'none';
+    if (statusContainer) statusContainer.style.display = 'none';
+    if (resultsSection) resultsSection.style.display = 'none';
+    
+    switch(section.toLowerCase()) {
+        case 'search':
+            if (searchContainer) {
+                searchContainer.style.display = 'block';
+                updatePageHeader('Find Business Leads', 'Search Google Maps and extract 50+ businesses with contact information');
+            }
+            break;
+            
+        case 'history':
+            showHistorySection();
+            break;
+            
+        case 'settings':
+            showSettingsSection();
+            break;
+            
+        default:
+            if (searchContainer) {
+                searchContainer.style.display = 'block';
+                updatePageHeader('Find Business Leads', 'Search Google Maps and extract 50+ businesses with contact information');
+            }
+    }
+}
+
+// Update page header
+function updatePageHeader(title, subtitle) {
+    const pageTitle = document.querySelector('.page-title');
+    const pageSubtitle = document.querySelector('.page-subtitle');
+    
+    if (pageTitle) pageTitle.textContent = title;
+    if (pageSubtitle) pageSubtitle.textContent = subtitle;
+}
+
+// Show history section
+function showHistorySection() {
+    updatePageHeader('Search History', 'View your previous searches and results');
+    
+    const mainContent = document.querySelector('.search-container');
+    if (mainContent) {
+        mainContent.innerHTML = `
+            <div class="search-header">
+                <h1 class="page-title">Search History</h1>
+                <p class="page-subtitle">View your previous searches and results</p>
+            </div>
+            <div class="history-content">
+                <div class="history-card">
+                    <div class="history-icon">
+                        <svg viewBox="0 0 24 24" fill="none" style="width: 48px; height: 48px; color: var(--gray-400);">
+                            <path d="M12 8V12M12 16H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h2 style="color: var(--gray-700); margin-bottom: var(--space-sm);">No Search History Yet</h2>
+                    <p style="color: var(--gray-600); margin-bottom: var(--space-lg);">Your search history will appear here after you perform your first search.</p>
+                    <button onclick="handleNavigation('search', document.querySelector('.nav-item'))" class="btn btn-primary">
+                        <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                            <path d="M17 17L13 13M15 9C15 12.3137 12.3137 15 9 15C5.68629 15 3 12.3137 3 9C3 5.68629 5.68629 3 9 3C12.3137 3 15 5.68629 15 9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Start Your First Search
+                    </button>
+                </div>
+            </div>
+        `;
+        mainContent.style.display = 'block';
+    }
+}
+
+// Show settings section  
+function showSettingsSection() {
+    updatePageHeader('Account Settings', 'Manage your account and preferences');
+    
+    const mainContent = document.querySelector('.search-container');
+    if (mainContent) {
+        mainContent.innerHTML = `
+            <div class="search-header">
+                <h1 class="page-title">Account Settings</h1>
+                <p class="page-subtitle">Manage your account and preferences</p>
+            </div>
+            <div class="settings-content">
+                <div class="settings-section">
+                    <h2 class="settings-title">Account Information</h2>
+                    <div class="settings-card">
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <strong>Email Address</strong>
+                                <p style="color: var(--gray-600); font-size: 0.875rem;">Your account email address</p>
+                            </div>
+                            <div class="setting-value">
+                                <span style="color: var(--gray-700);">${currentUser ? currentUser.email : 'Not available'}</span>
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <strong>Account Credits</strong>
+                                <p style="color: var(--gray-600); font-size: 0.875rem;">Available search credits</p>
+                            </div>
+                            <div class="setting-value">
+                                <span style="color: var(--primary); font-weight: 600;">${currentUser ? currentUser.credits : 0} credits</span>
+                                <button onclick="showBuyCredits()" class="btn btn-primary btn-small" style="margin-left: var(--space-sm);">Buy More</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h2 class="settings-title">Preferences</h2>
+                    <div class="settings-card">
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <strong>Export Format</strong>
+                                <p style="color: var(--gray-600); font-size: 0.875rem;">Default format for exporting results</p>
+                            </div>
+                            <div class="setting-value">
+                                <select class="form-control" style="padding: var(--space-xs) var(--space-sm); border: 1px solid var(--gray-300); border-radius: var(--radius-md);">
+                                    <option value="csv">CSV</option>
+                                    <option value="json">JSON</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h2 class="settings-title" style="color: var(--error);">Danger Zone</h2>
+                    <div class="settings-card" style="border-color: var(--error);">
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <strong>Sign Out</strong>
+                                <p style="color: var(--gray-600); font-size: 0.875rem;">Sign out of your account</p>
+                            </div>
+                            <div class="setting-value">
+                                <button onclick="logout()" class="btn btn-secondary" style="color: var(--error); border-color: var(--error);">
+                                    Sign Out
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        mainContent.style.display = 'block';
+    }
 }
 
 // Check authentication
