@@ -5,6 +5,7 @@ let isAuthenticated = false;
 let currentUser = null;
 let currentSessionId = null;
 let statusCheckInterval = null;
+let searchHistory = []; // Store completed searches
 
 // DOM elements
 const authSection = document.getElementById('authSection');
@@ -227,6 +228,10 @@ function handleNavigation(section, clickedItem) {
             showHistorySection();
             break;
             
+        case 'results':
+            showResultsSection();
+            break;
+            
         case 'settings':
             showSettingsSection();
             break;
@@ -277,6 +282,74 @@ function showHistorySection() {
                 </div>
             </div>
         `;
+        mainContent.style.display = 'block';
+    }
+}
+
+// Show results section
+function showResultsSection() {
+    updatePageHeader('Search Results', 'View and export your completed searches');
+    
+    const mainContent = document.querySelector('.search-container');
+    if (mainContent) {
+        if (searchHistory.length === 0) {
+            mainContent.innerHTML = `
+                <div class="search-header">
+                    <h1 class="page-title">Search Results</h1>
+                    <p class="page-subtitle">View and export your completed searches</p>
+                </div>
+                <div class="history-content">
+                    <div class="history-card">
+                        <div class="history-icon">
+                            <svg viewBox="0 0 24 24" fill="none" style="width: 48px; height: 48px; color: var(--gray-400);">
+                                <path d="M9 12H15M9 16H15M17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3H12.5858C12.851 3 13.1054 3.10536 13.2929 3.29289L19.7071 9.70711C19.8946 9.89464 20 10.149 20 10.4142V19C20 20.1046 19.1046 21 18 21H17ZM17 21V11H13V7H7V19H17Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <h2 style="color: var(--gray-700); margin-bottom: var(--space-sm);">No Search Results Yet</h2>
+                        <p style="color: var(--gray-600); margin-bottom: var(--space-lg);">Complete a search to view and export your results here.</p>
+                        <button onclick="goToSearch()" class="btn btn-primary">
+                            <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                                <path d="M17 17L13 13M15 9C15 12.3137 12.3137 15 9 15C5.68629 15 3 12.3137 3 9C3 5.68629 5.68629 3 9 3C12.3137 3 15 5.68629 15 9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Start Your First Search
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else {
+            // Show search history with results
+            const searchCards = searchHistory.map(search => `
+                <div class="result-card">
+                    <div class="result-header">
+                        <div class="result-info">
+                            <h3 class="result-query">"${search.query}"</h3>
+                            <div class="result-meta">
+                                <span class="result-count">${search.resultCount} businesses</span>
+                                <span class="result-date">${search.completedAt}</span>
+                            </div>
+                        </div>
+                        <div class="result-actions">
+                            <button onclick="viewSearchResults('${search.id}')" class="btn btn-primary btn-sm">
+                                <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                                    <path d="M10 12.5L10 7.5M10 12.5L7.5 10M10 12.5L12.5 10M19 10C19 14.9706 14.9706 19 10 19C5.02944 19 1 14.9706 1 10C1 5.02944 5.02944 1 10 1C14.9706 1 19 5.02944 19 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                View Results
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            mainContent.innerHTML = `
+                <div class="search-header">
+                    <h1 class="page-title">Search Results</h1>
+                    <p class="page-subtitle">View and export your completed searches</p>
+                </div>
+                <div class="results-list">
+                    ${searchCards}
+                </div>
+            `;
+        }
         mainContent.style.display = 'block';
     }
 }
@@ -685,10 +758,25 @@ async function checkSearchStatus() {
             if (status === 'completed') {
                 clearInterval(statusCheckInterval);
                 updateStatus('🎉 Search completed! Found ' + (results?.length || 0) + ' businesses', 100);
+                
+                // Store the completed search
+                const completedSearch = {
+                    id: currentSessionId,
+                    query: document.getElementById('searchInput').value.trim(),
+                    results: results,
+                    resultCount: results?.length || 0,
+                    completedAt: new Date().toLocaleString()
+                };
+                searchHistory.unshift(completedSearch); // Add to beginning of array
+                
                 setTimeout(() => {
-                    displayResults(results);
+                    // Show success message and reset
+                    updateStatus('✅ Results saved! Click "Results" tab to view them.', 100);
                     resetSearchButton();
-                }, 1000);
+                    
+                    // Update nav indicator if results tab exists
+                    updateResultsNavIndicator();
+                }, 1500);
             } else if (status === 'failed') {
                 clearInterval(statusCheckInterval);
                 updateStatus('❌ Search failed. Please try again.', 0);
@@ -711,6 +799,130 @@ function updateStatus(message, progress) {
     
     statusEl.textContent = message;
     progressFill.style.width = `${progress}%`;
+}
+
+// View specific search results
+function viewSearchResults(searchId) {
+    const search = searchHistory.find(s => s.id === searchId);
+    if (!search) return;
+    
+    const mainContent = document.querySelector('.search-container');
+    if (mainContent) {
+        const resultsGrid = search.results.map((business, index) => {
+            return `
+                <div class="business-card" style="opacity: 0; transform: translateY(20px); animation: slideInUp 0.3s ease-out ${index * 0.05}s forwards;">
+                    <div class="business-header">
+                        <h3 class="business-name">${business.name || 'Unknown Business'}</h3>
+                        <div class="business-meta">
+                            ${business.address ? `<span class="business-address">📍 ${business.address}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="business-contact">
+                        ${business.phone ? `<div class="contact-item">📞 <a href="tel:${business.phone}">${business.phone}</a></div>` : ''}
+                        ${business.email ? `<div class="contact-item">✉️ <a href="mailto:${business.email}">${business.email}</a></div>` : ''}
+                        ${business.website ? `<div class="contact-item">🌐 <a href="${business.website.startsWith('http') ? business.website : 'https://' + business.website}" target="_blank">${business.website}</a></div>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        mainContent.innerHTML = `
+            <div class="search-header">
+                <button onclick="showResultsSection()" class="btn btn-secondary btn-sm back-button">
+                    <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                        <path d="M12.5 7.5L7.5 10L12.5 12.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Back to Results
+                </button>
+                <h1 class="page-title">"${search.query}"</h1>
+                <p class="page-subtitle">Found ${search.resultCount} businesses • ${search.completedAt}</p>
+                <div class="export-actions">
+                    <button onclick="exportResults('${searchId}', 'csv')" class="btn btn-outline btn-sm">
+                        <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                            <path d="M10 12.5L10 7.5M10 12.5L7.5 10M10 12.5L12.5 10M19 10C19 14.9706 14.9706 19 10 19C5.02944 19 1 14.9706 1 10C1 5.02944 5.02944 1 10 1C14.9706 1 19 5.02944 19 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Export CSV
+                    </button>
+                    <button onclick="exportResults('${searchId}', 'json')" class="btn btn-outline btn-sm">
+                        <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                            <path d="M10 12.5L10 7.5M10 12.5L7.5 10M10 12.5L12.5 10M19 10C19 14.9706 14.9706 19 10 19C5.02944 19 1 14.9706 1 10C1 5.02944 5.02944 1 10 1C14.9706 1 19 5.02944 19 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Export JSON
+                    </button>
+                </div>
+            </div>
+            <div class="business-results-grid">
+                ${resultsGrid}
+            </div>
+        `;
+        mainContent.style.display = 'block';
+    }
+}
+
+// Export search results
+function exportResults(searchId, format) {
+    const search = searchHistory.find(s => s.id === searchId);
+    if (!search) return;
+    
+    if (format === 'csv') {
+        const csv = 'Name,Address,Phone,Email,Website\n' + 
+            search.results.map(r => `"${r.name || ''}","${r.address || ''}","${r.phone || ''}","${r.email || ''}","${r.website || ''}"`).join('\n');
+        
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${search.query.replace(/[^a-zA-Z0-9]/g, '_')}_results.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    } else if (format === 'json') {
+        const json = JSON.stringify(search.results, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${search.query.replace(/[^a-zA-Z0-9]/g, '_')}_results.json`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
+}
+
+// Update results navigation indicator
+function updateResultsNavIndicator() {
+    // Find the Results nav item by looking for the span with "Results" text
+    const navItems = document.querySelectorAll('.nav-item');
+    let resultsNav = null;
+    
+    navItems.forEach(item => {
+        const span = item.querySelector('span');
+        if (span && span.textContent.trim() === 'Results') {
+            resultsNav = item;
+        }
+    });
+    
+    if (resultsNav && searchHistory.length > 0) {
+        let badge = resultsNav.querySelector('.nav-badge');
+        if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'nav-badge';
+            badge.style.cssText = `
+                position: absolute;
+                top: 8px;
+                right: 8px;
+                background: var(--primary);
+                color: white;
+                border-radius: 10px;
+                padding: 2px 6px;
+                font-size: 12px;
+                font-weight: 500;
+                min-width: 18px;
+                text-align: center;
+            `;
+            resultsNav.style.position = 'relative';
+            resultsNav.appendChild(badge);
+        }
+        badge.textContent = searchHistory.length;
+    }
 }
 
 // Display results

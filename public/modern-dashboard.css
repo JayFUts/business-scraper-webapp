@@ -1123,3 +1123,180 @@ body {
         justify-content: flex-start;
     }
 }
+
+/* Results Section Styles */
+.results-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+}
+
+.result-card {
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+}
+
+.result-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-light);
+}
+
+.result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--space-md);
+}
+
+.result-info {
+    flex: 1;
+}
+
+.result-query {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--gray-900);
+    margin: 0 0 var(--space-xs) 0;
+}
+
+.result-meta {
+    display: flex;
+    gap: var(--space-md);
+    font-size: 0.875rem;
+    color: var(--gray-600);
+}
+
+.result-count {
+    font-weight: 500;
+    color: var(--primary);
+}
+
+.result-actions {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+/* Business Results Grid */
+.business-results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--space-lg);
+    margin-top: var(--space-lg);
+}
+
+.business-card {
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+}
+
+.business-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.business-header {
+    margin-bottom: var(--space-md);
+}
+
+.business-name {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--gray-900);
+    margin: 0 0 var(--space-xs) 0;
+}
+
+.business-address {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+}
+
+.business-contact {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.contact-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font-size: 0.875rem;
+}
+
+.contact-item a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.contact-item a:hover {
+    text-decoration: underline;
+}
+
+/* Back button styling */
+.back-button {
+    margin-bottom: var(--space-md);
+}
+
+/* Export actions */
+.export-actions {
+    display: flex;
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+}
+
+/* Slide-in animation for business cards */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Navigation badge */
+.nav-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: var(--primary);
+    color: white;
+    border-radius: 10px;
+    padding: 2px 6px;
+    font-size: 12px;
+    font-weight: 500;
+    min-width: 18px;
+    text-align: center;
+}
+
+/* Mobile responsive for results */
+@media (max-width: 768px) {
+    .result-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .result-meta {
+        flex-direction: column;
+        gap: var(--space-xs);
+    }
+    
+    .business-results-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .export-actions {
+        flex-direction: column;
+    }
+}
