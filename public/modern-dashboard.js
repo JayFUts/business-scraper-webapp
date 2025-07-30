@@ -1,5 +1,47 @@
 // Modern Dashboard JavaScript
 
+// XSS Protection - HTML sanitization utility
+function escapeHtml(text) {
+    if (typeof text !== 'string') return text;
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    };
+    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+}
+
+// Safe DOM helper functions
+function setTextContent(element, text) {
+    if (element) {
+        element.textContent = text || '';
+    }
+}
+
+function setInnerHTML(element, html) {
+    if (element) {
+        // Only use innerHTML for pre-sanitized content
+        element.innerHTML = html;
+    }
+}
+
+function createSafeElement(tagName, textContent, attributes = {}) {
+    const element = document.createElement(tagName);
+    if (textContent) {
+        element.textContent = textContent;
+    }
+    for (const [key, value] of Object.entries(attributes)) {
+        if (key === 'href' && !value.startsWith('http://') && !value.startsWith('https://') && !value.startsWith('tel:') && !value.startsWith('mailto:')) {
+            // Validate URL schemes for security
+            continue;
+        }
+        element.setAttribute(key, value);
+    }
+    return element;
+}
+
 // Global variables
 let isAuthenticated = false;
 let currentUser = null;
@@ -80,6 +122,48 @@ function setupEventListeners() {
                 startSearch();
             }
         });
+    }
+    
+    // Main button event listeners
+    const logoutButton = document.getElementById('logoutButton');
+    if (logoutButton) {
+        logoutButton.addEventListener('click', logout);
+    }
+    
+    const buyCreditsButton = document.getElementById('buyCreditsButton');
+    if (buyCreditsButton) {
+        buyCreditsButton.addEventListener('click', showBuyCredits);
+    }
+    
+    const searchButton = document.getElementById('searchButton');
+    if (searchButton) {
+        searchButton.addEventListener('click', startSearch);
+    }
+    
+    const exportCsvButton = document.getElementById('exportCsvButton');
+    if (exportCsvButton) {
+        exportCsvButton.addEventListener('click', () => exportResults('csv'));
+    }
+    
+    const exportJsonButton = document.getElementById('exportJsonButton');
+    if (exportJsonButton) {
+        exportJsonButton.addEventListener('click', () => exportResults('json'));
+    }
+    
+    // Modal event listeners
+    const modalOverlay = document.getElementById('modalOverlay');
+    if (modalOverlay) {
+        modalOverlay.addEventListener('click', closeBuyCredits);
+    }
+    
+    const modalCloseButton = document.getElementById('modalCloseButton');
+    if (modalCloseButton) {
+        modalCloseButton.addEventListener('click', closeBuyCredits);
+    }
+    
+    const buyCreditsModalButton = document.getElementById('buyCreditsModalButton');
+    if (buyCreditsModalButton) {
+        buyCreditsModalButton.addEventListener('click', () => buyCredits());
     }
     
     // Navigation items
@@ -307,7 +391,7 @@ function showResultsSection() {
                         </div>
                         <h2 style="color: var(--gray-700); margin-bottom: var(--space-sm);">No Search Results Yet</h2>
                         <p style="color: var(--gray-600); margin-bottom: var(--space-lg);">Complete a search to view and export your results here.</p>
-                        <button onclick="goToSearch()" class="btn btn-primary">
+                        <button id="startFirstSearchButton" class="btn btn-primary">
                             <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
                                 <path d="M17 17L13 13M15 9C15 12.3137 12.3137 15 9 15C5.68629 15 3 12.3137 3 9C3 5.68629 5.68629 3 9 3C12.3137 3 15 5.68629 15 9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
@@ -316,39 +400,75 @@ function showResultsSection() {
                     </div>
                 </div>
             `;
-        } else {
-            // Show search history with results
-            const searchCards = searchHistory.map(search => `
-                <div class="result-card">
-                    <div class="result-header">
-                        <div class="result-info">
-                            <h3 class="result-query">"${search.query}"</h3>
-                            <div class="result-meta">
-                                <span class="result-count">${search.resultCount} businesses</span>
-                                <span class="result-date">${search.completedAt}</span>
-                            </div>
-                        </div>
-                        <div class="result-actions">
-                            <button onclick="viewSearchResults('${search.id}')" class="btn btn-primary btn-sm">
-                                <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
-                                    <path d="M10 12.5L10 7.5M10 12.5L7.5 10M10 12.5L12.5 10M19 10C19 14.9706 14.9706 19 10 19C5.02944 19 1 14.9706 1 10C1 5.02944 5.02944 1 10 1C14.9706 1 19 5.02944 19 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                                View Results
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
             
-            mainContent.innerHTML = `
-                <div class="search-header">
-                    <h1 class="page-title">Search Results</h1>
-                    <p class="page-subtitle">View and export your completed searches</p>
-                </div>
-                <div class="results-list">
-                    ${searchCards}
-                </div>
-            `;
+            // Add event listener for the start first search button
+            setTimeout(() => {
+                const startFirstSearchButton = document.getElementById('startFirstSearchButton');
+                if (startFirstSearchButton) {
+                    startFirstSearchButton.addEventListener('click', goToSearch);
+                }
+            }, 0);
+        } else {
+            // Create search history cards safely
+            const resultsList = document.createElement('div');
+            resultsList.className = 'results-list';
+            
+            searchHistory.forEach(search => {
+                const card = document.createElement('div');
+                card.className = 'result-card';
+                
+                const header = document.createElement('div');
+                header.className = 'result-header';
+                
+                const info = document.createElement('div');
+                info.className = 'result-info';
+                
+                // Safe query display
+                const query = createSafeElement('h3', `"${search.query}"`, { class: 'result-query' });
+                info.appendChild(query);
+                
+                const meta = document.createElement('div');
+                meta.className = 'result-meta';
+                
+                const count = createSafeElement('span', `${search.resultCount} businesses`, { class: 'result-count' });
+                const date = createSafeElement('span', search.completedAt, { class: 'result-date' });
+                meta.appendChild(count);
+                meta.appendChild(date);
+                info.appendChild(meta);
+                
+                const actions = document.createElement('div');
+                actions.className = 'result-actions';
+                
+                const viewButton = document.createElement('button');
+                viewButton.className = 'btn btn-primary btn-sm';
+                viewButton.innerHTML = `
+                    <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                        <path d="M10 12.5L10 7.5M10 12.5L7.5 10M10 12.5L12.5 10M19 10C19 14.9706 14.9706 19 10 19C5.02944 19 1 14.9706 1 10C1 5.02944 5.02944 1 10 1C14.9706 1 19 5.02944 19 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    View Results
+                `;
+                viewButton.addEventListener('click', () => viewSearchResults(search.id));
+                actions.appendChild(viewButton);
+                
+                header.appendChild(info);
+                header.appendChild(actions);
+                card.appendChild(header);
+                resultsList.appendChild(card);
+            });
+            
+            // Clear and rebuild content safely
+            mainContent.innerHTML = '';
+            
+            const header = document.createElement('div');
+            header.className = 'search-header';
+            
+            const title = createSafeElement('h1', 'Search Results', { class: 'page-title' });
+            const subtitle = createSafeElement('p', 'View and export your completed searches', { class: 'page-subtitle' });
+            header.appendChild(title);
+            header.appendChild(subtitle);
+            
+            mainContent.appendChild(header);
+            mainContent.appendChild(resultsList);
         }
         mainContent.style.display = 'block';
     }
@@ -375,7 +495,7 @@ function showSettingsSection() {
                                 <p style="color: var(--gray-600); font-size: 0.875rem;">Your account email address</p>
                             </div>
                             <div class="setting-value">
-                                <span style="color: var(--gray-700);">${currentUser ? currentUser.email : 'Not available'}</span>
+                                <span style="color: var(--gray-700);" id="userEmailDisplay">Loading...</span>
                             </div>
                         </div>
                         <div class="setting-item">
@@ -384,8 +504,8 @@ function showSettingsSection() {
                                 <p style="color: var(--gray-600); font-size: 0.875rem;">Available search credits</p>
                             </div>
                             <div class="setting-value">
-                                <span style="color: var(--primary); font-weight: 600;">${currentUser ? currentUser.credits : 0} credits</span>
-                                <button onclick="showBuyCredits()" class="btn btn-primary btn-small" style="margin-left: var(--space-sm);">Buy More</button>
+                                <span style="color: var(--primary); font-weight: 600;" id="userCreditsDisplay">Loading...</span>
+                                <button id="buyMoreCreditsButton" class="btn btn-primary btn-small" style="margin-left: var(--space-sm);">Buy More</button>
                             </div>
                         </div>
                     </div>
@@ -427,6 +547,24 @@ function showSettingsSection() {
                 </div>
             </div>
         `;
+        
+        // Safely populate user data after HTML is created
+        setTimeout(() => {
+            const userEmailDisplay = document.getElementById('userEmailDisplay');
+            const userCreditsDisplay = document.getElementById('userCreditsDisplay');
+            const buyMoreCreditsButton = document.getElementById('buyMoreCreditsButton');
+            
+            if (userEmailDisplay) {
+                setTextContent(userEmailDisplay, currentUser ? currentUser.email : 'Not available');
+            }
+            if (userCreditsDisplay) {
+                setTextContent(userCreditsDisplay, currentUser ? `${currentUser.credits} credits` : '0 credits');
+            }
+            if (buyMoreCreditsButton) {
+                buyMoreCreditsButton.addEventListener('click', showBuyCredits);
+            }
+        }, 0);
+        
         mainContent.style.display = 'block';
     }
 }
@@ -808,53 +946,128 @@ function viewSearchResults(searchId) {
     
     const mainContent = document.querySelector('.search-container');
     if (mainContent) {
-        const resultsGrid = search.results.map((business, index) => {
-            return `
-                <div class="business-card" style="opacity: 0; transform: translateY(20px); animation: slideInUp 0.3s ease-out ${index * 0.05}s forwards;">
-                    <div class="business-header">
-                        <h3 class="business-name">${business.name || 'Unknown Business'}</h3>
-                        <div class="business-meta">
-                            ${business.address ? `<span class="business-address">📍 ${business.address}</span>` : ''}
-                        </div>
-                    </div>
-                    <div class="business-contact">
-                        ${business.phone ? `<div class="contact-item">📞 <a href="tel:${business.phone}">${business.phone}</a></div>` : ''}
-                        ${business.email ? `<div class="contact-item">✉️ <a href="mailto:${business.email}">${business.email}</a></div>` : ''}
-                        ${business.website ? `<div class="contact-item">🌐 <a href="${business.website.startsWith('http') ? business.website : 'https://' + business.website}" target="_blank">${business.website}</a></div>` : ''}
-                    </div>
-                </div>
-            `;
-        }).join('');
+        // Create business cards safely using DOM methods
+        const businessGrid = document.createElement('div');
+        businessGrid.className = 'business-results-grid';
         
-        mainContent.innerHTML = `
-            <div class="search-header">
-                <button onclick="showResultsSection()" class="btn btn-secondary btn-sm back-button">
-                    <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
-                        <path d="M12.5 7.5L7.5 10L12.5 12.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                    Back to Results
-                </button>
-                <h1 class="page-title">"${search.query}"</h1>
-                <p class="page-subtitle">Found ${search.resultCount} businesses • ${search.completedAt}</p>
-                <div class="export-actions">
-                    <button onclick="exportResults('${searchId}', 'csv')" class="btn btn-outline btn-sm">
-                        <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
-                            <path d="M10 12.5L10 7.5M10 12.5L7.5 10M10 12.5L12.5 10M19 10C19 14.9706 14.9706 19 10 19C5.02944 19 1 14.9706 1 10C1 5.02944 5.02944 1 10 1C14.9706 1 19 5.02944 19 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                        Export CSV
-                    </button>
-                    <button onclick="exportResults('${searchId}', 'json')" class="btn btn-outline btn-sm">
-                        <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
-                            <path d="M10 12.5L10 7.5M10 12.5L7.5 10M10 12.5L12.5 10M19 10C19 14.9706 14.9706 19 10 19C5.02944 19 1 14.9706 1 10C1 5.02944 5.02944 1 10 1C14.9706 1 19 5.02944 19 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                        Export JSON
-                    </button>
-                </div>
-            </div>
-            <div class="business-results-grid">
-                ${resultsGrid}
-            </div>
+        search.results.forEach((business, index) => {
+            const card = document.createElement('div');
+            card.className = 'business-card';
+            card.style.cssText = `opacity: 0; transform: translateY(20px); animation: slideInUp 0.3s ease-out ${index * 0.05}s forwards;`;
+            
+            // Business header
+            const header = document.createElement('div');
+            header.className = 'business-header';
+            
+            const name = createSafeElement('h3', business.name || 'Unknown Business', { class: 'business-name' });
+            header.appendChild(name);
+            
+            if (business.address) {
+                const meta = document.createElement('div');
+                meta.className = 'business-meta';
+                const address = createSafeElement('span', `📍 ${business.address}`, { class: 'business-address' });
+                meta.appendChild(address);
+                header.appendChild(meta);
+            }
+            
+            card.appendChild(header);
+            
+            // Business contact
+            const contact = document.createElement('div');
+            contact.className = 'business-contact';
+            
+            if (business.phone) {
+                const phoneItem = document.createElement('div');
+                phoneItem.className = 'contact-item';
+                phoneItem.textContent = '📞 ';
+                const phoneLink = createSafeElement('a', business.phone, { href: `tel:${business.phone}` });
+                phoneItem.appendChild(phoneLink);
+                contact.appendChild(phoneItem);
+            }
+            
+            if (business.email) {
+                const emailItem = document.createElement('div');
+                emailItem.className = 'contact-item';
+                emailItem.textContent = '✉️ ';
+                const emailLink = createSafeElement('a', business.email, { href: `mailto:${business.email}` });
+                emailItem.appendChild(emailLink);
+                contact.appendChild(emailItem);
+            }
+            
+            if (business.website) {
+                const websiteItem = document.createElement('div');
+                websiteItem.className = 'contact-item';
+                websiteItem.textContent = '🌐 ';
+                const websiteUrl = business.website.startsWith('http') ? business.website : 'https://' + business.website;
+                const websiteLink = createSafeElement('a', business.website, { href: websiteUrl, target: '_blank' });
+                websiteItem.appendChild(websiteLink);
+                contact.appendChild(websiteItem);
+            }
+            
+            card.appendChild(contact);
+            businessGrid.appendChild(card);
+        });
+        
+        // Clear and rebuild main content safely
+        mainContent.innerHTML = '';
+        
+        // Create header section
+        const header = document.createElement('div');
+        header.className = 'search-header';
+        
+        // Back button (will add event listener after creation)
+        const backButton = document.createElement('button');
+        backButton.className = 'btn btn-secondary btn-sm back-button';
+        backButton.id = 'backToResultsButton';
+        backButton.innerHTML = `
+            <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                <path d="M12.5 7.5L7.5 10L12.5 12.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Back to Results
         `;
+        header.appendChild(backButton);
+        
+        // Title and subtitle
+        const title = createSafeElement('h1', `"${search.query}"`, { class: 'page-title' });
+        const subtitle = createSafeElement('p', `Found ${search.resultCount} businesses • ${search.completedAt}`, { class: 'page-subtitle' });
+        header.appendChild(title);
+        header.appendChild(subtitle);
+        
+        // Export buttons
+        const exportActions = document.createElement('div');
+        exportActions.className = 'export-actions';
+        
+        const exportCsvBtn = document.createElement('button');
+        exportCsvBtn.className = 'btn btn-outline btn-sm';
+        exportCsvBtn.id = 'exportCsvIndividualButton';
+        exportCsvBtn.innerHTML = `
+            <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                <path d="M10 12.5L10 7.5M10 12.5L7.5 10M10 12.5L12.5 10M19 10C19 14.9706 14.9706 19 10 19C5.02944 19 1 14.9706 1 10C1 5.02944 5.02944 1 10 1C14.9706 1 19 5.02944 19 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Export CSV
+        `;
+        
+        const exportJsonBtn = document.createElement('button');
+        exportJsonBtn.className = 'btn btn-outline btn-sm';
+        exportJsonBtn.id = 'exportJsonIndividualButton';
+        exportJsonBtn.innerHTML = `
+            <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                <path d="M10 12.5L10 7.5M10 12.5L7.5 10M10 12.5L12.5 10M19 10C19 14.9706 14.9706 19 10 19C5.02944 19 1 14.9706 1 10C1 5.02944 5.02944 1 10 1C14.9706 1 19 5.02944 19 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Export JSON
+        `;
+        
+        exportActions.appendChild(exportCsvBtn);
+        exportActions.appendChild(exportJsonBtn);
+        header.appendChild(exportActions);
+        
+        mainContent.appendChild(header);
+        mainContent.appendChild(businessGrid);
+        
+        // Add event listeners for the new buttons
+        backButton.addEventListener('click', showResultsSection);
+        exportCsvBtn.addEventListener('click', () => exportResults(searchId, 'csv'));
+        exportJsonBtn.addEventListener('click', () => exportResults(searchId, 'json'));
         mainContent.style.display = 'block';
     }
 }
@@ -1045,13 +1258,13 @@ function closeBuyCredits() {
     }, 300);
 }
 
-// Buy credits
-async function buyCredits(credits, amount) {
+// Buy credits - secure implementation with package ID only
+async function buyCredits(packageId = 'starter-pack') {
     try {
         const response = await fetch('/api/payments/create-purchase', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ credits, amount })
+            body: JSON.stringify({ packageId })
         });
         
         const data = await response.json();
@@ -1060,10 +1273,10 @@ async function buyCredits(credits, amount) {
             // Store purchase ID
             localStorage.setItem('pendingPurchaseId', data.purchaseId);
             
-            // Redirect to Stripe
-            window.location.href = `https://buy.stripe.com/14AdR89kIbVBgAPbxF7AI00?client_reference_id=${data.purchaseId}`;
+            // Redirect to Stripe using server-provided URL
+            window.location.href = `${data.stripeUrl}?client_reference_id=${data.purchaseId}`;
         } else {
-            alert('Failed to create purchase. Please try again.');
+            alert(data.error || 'Failed to create purchase. Please try again.');
         }
     } catch (error) {
         console.error('Purchase error:', error);

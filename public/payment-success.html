@@ -32,7 +32,7 @@
           <div class="spinner" style="margin: 0 auto;"></div>
         </div>
         
-        <button onclick="goToApp()" class="auth-btn" id="continueBtn" style="display: none;">
+        <button class="auth-btn" id="continueBtn" style="display: none;">
           Continue to App
         </button>
       </div>
@@ -91,6 +91,14 @@
     function goToApp() {
       window.location.href = '/';
     }
+    
+    // Setup event listeners
+    document.addEventListener('DOMContentLoaded', () => {
+      const continueBtn = document.getElementById('continueBtn');
+      if (continueBtn) {
+        continueBtn.addEventListener('click', goToApp);
+      }
+    });
     
     // Start the completion process when page loads
     completePurchase();

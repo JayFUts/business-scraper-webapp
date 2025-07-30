@@ -431,16 +431,10 @@ function closeBuyCredits() {
   document.getElementById('buyCreditsModal').style.display = 'none';
 }
 
-// Buy credits function with real Stripe integration
-async function buyCredits(credits, price) {
-  // Only support the €10 package for now since we have one Stripe link
-  if (price !== 10) {
-    alert('Currently only €10 credit packages are available. Please select the Basic package.');
-    return;
-  }
-  
+// Buy credits function with secure server-side pricing
+async function buyCredits(packageId = 'starter-pack') {
   try {
-    // Create a pending purchase record
+    // Create a pending purchase record with server-controlled pricing
     const response = await fetch('/api/payments/create-purchase', {
       method: 'POST',
       headers: {
@@ -448,9 +442,7 @@ async function buyCredits(credits, price) {
       },
       credentials: 'include',
       body: JSON.stringify({ 
-        credits: credits,
-        amount: price,
-        email: currentUser.email
+        packageId: packageId
       }),
     });
 
@@ -460,13 +452,21 @@ async function buyCredits(credits, price) {
 
     const data = await response.json();
     const purchaseId = data.purchaseId;
+    const data = await response.json();
     
-    // Redirect to Stripe with success/cancel URLs that include the purchase ID
-    const baseUrl = window.location.origin;
-    const stripeUrl = `https://buy.stripe.com/14AdR89kIbVBgAPbxF7AI00?client_reference_id=${purchaseId}&success_url=${encodeURIComponent(baseUrl + '/payment-success.html?purchase_id=' + purchaseId)}&cancel_url=${encodeURIComponent(baseUrl + '/payment-cancel.html')}`;
-    
-    // Open Stripe checkout in same window
-    window.location.href = stripeUrl;
+    if (response.ok) {
+      // Store purchase ID
+      localStorage.setItem('pendingPurchaseId', data.purchaseId);
+      
+      // Redirect to Stripe using server-provided URL
+      const baseUrl = window.location.origin;
+      const stripeUrl = `${data.stripeUrl}?client_reference_id=${data.purchaseId}&success_url=${encodeURIComponent(baseUrl + '/payment-success.html?purchase_id=' + data.purchaseId)}&cancel_url=${encodeURIComponent(baseUrl + '/payment-cancel.html')}`;
+      
+      // Open Stripe checkout in same window
+      window.location.href = stripeUrl;
+    } else {
+      alert(data.error || 'Failed to create purchase. Please try again.');
+    }
     
   } catch (error) {
     console.error('Payment error:', error);

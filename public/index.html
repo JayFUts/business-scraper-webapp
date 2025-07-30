@@ -139,7 +139,7 @@
           </div>
           <div class="user-details">
             <span class="user-email" id="userEmail"></span>
-            <button onclick="logout()" class="logout-link">Sign out</button>
+            <button id="logoutButton" class="logout-link">Sign out</button>
           </div>
         </div>
       </div>
@@ -164,7 +164,7 @@
             <span class="credits-label">Credits:</span>
             <span class="credits-value" id="creditsCount">0</span>
           </div>
-          <button onclick="showBuyCredits()" class="btn btn-primary btn-small">
+          <button id="buyCreditsButton" class="btn btn-primary btn-small">
             <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
               <path d="M10 5V15M5 10H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
@@ -186,7 +186,7 @@
               <path d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
             <input type="text" id="searchInput" class="search-input" placeholder="e.g., restaurants in Amsterdam" value="restaurants in Amsterdam">
-            <button id="searchButton" onclick="startSearch()" class="btn btn-primary search-btn">
+            <button id="searchButton" class="btn btn-primary search-btn">
               <span id="buttonText">Search</span>
               <div id="loadingSpinner" class="spinner" style="display: none;"></div>
             </button>
@@ -229,13 +229,13 @@
             <p class="results-count">Found <span id="resultCount">0</span> businesses</p>
           </div>
           <div class="export-buttons">
-            <button onclick="exportResults('csv')" class="btn btn-secondary">
+            <button id="exportCsvButton" class="btn btn-secondary">
               <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
                 <path d="M3 17L3 13M3 13L7 13M3 13L7 17M17 3L17 7M17 7L13 7M17 7L13 3M7 3L3 3L3 7M17 17L17 13L13 13M13 17L17 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
               Export CSV
             </button>
-            <button onclick="exportResults('json')" class="btn btn-secondary">
+            <button id="exportJsonButton" class="btn btn-secondary">
               <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
                 <path d="M9 12H15M9 16H15M13 8L11 6L9 8M5 20H19C19.5304 20 20.0391 19.7893 20.4142 19.4142C20.7893 19.0391 21 18.5304 21 18V6C21 5.46957 20.7893 4.96086 20.4142 4.58579C20.0391 4.21071 19.5304 4 19 4H5C4.46957 4 3.96086 4.21071 3.58579 4.58579C3.21071 4.96086 3 5.46957 3 6V18C3 18.5304 3.21071 19.0391 3.58579 19.4142C3.96086 19.7893 4.46957 20 5 20Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
@@ -252,11 +252,11 @@
     
   <!-- Buy Credits Modal -->
   <div id="buyCreditsModal" class="modal" style="display: none;">
-    <div class="modal-overlay" onclick="closeBuyCredits()"></div>
+    <div class="modal-overlay" id="modalOverlay"></div>
     <div class="modal-content">
       <div class="modal-header">
         <h2 class="modal-title">Buy Credits</h2>
-        <button onclick="closeBuyCredits()" class="modal-close">
+        <button id="modalCloseButton" class="modal-close">
           <svg viewBox="0 0 24 24" fill="none">
             <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -291,7 +291,7 @@
                 <span>€1 per search</span>
               </div>
             </div>
-            <button onclick="buyCredits(100, 10)" class="btn btn-primary btn-block">
+            <button id="buyCreditsModalButton" class="btn btn-primary btn-block">
               <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
                 <path d="M3 4H17L15.5 13H4.5L3 4ZM3 4L2.25 1.5M7 17.5C7 18.3284 6.32843 19 5.5 19C4.67157 19 4 18.3284 4 17.5M15 17.5C15 18.3284 14.3284 19 13.5 19C12.6716 19 12 18.3284 12 17.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>

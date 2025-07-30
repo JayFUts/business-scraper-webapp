@@ -17,7 +17,7 @@
           You can try again anytime to purchase credits and start scraping businesses.
         </div>
         
-        <button onclick="goToApp()" class="auth-btn">
+        <button id="backToAppBtn" class="auth-btn">
           Back to App
         </button>
       </div>
@@ -28,6 +28,14 @@
     function goToApp() {
       window.location.href = '/';
     }
+    
+    // Setup event listeners
+    document.addEventListener('DOMContentLoaded', () => {
+      const backToAppBtn = document.getElementById('backToAppBtn');
+      if (backToAppBtn) {
+        backToAppBtn.addEventListener('click', goToApp);
+      }
+    });
   </script>
 </body>
 </html>

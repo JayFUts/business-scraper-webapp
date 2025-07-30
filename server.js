@@ -24,13 +24,23 @@ app.use(helmet({
 }));
 
 // Rate limiting
-const limiter = rateLimit({
+const scrapeLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10, // Limit each IP to 10 requests per windowMs
   message: 'Too many scraping requests, please try again later.'
 });
 
-app.use('/api/scrape', limiter);
+// Auth rate limiting - more restrictive to prevent brute force
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 auth attempts per windowMs
+  message: 'Too many authentication attempts, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+app.use('/api/scrape', scrapeLimiter);
+app.use(['/api/auth/login', '/api/auth/register'], authLimiter);
 
 // Session middleware
 app.use(session({
@@ -62,8 +72,8 @@ app.get('/', optionalAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'landing.html'));
 });
 
-// Serve dashboard for authenticated users
-app.get('/dashboard', (req, res) => {
+// Serve dashboard for authenticated users only
+app.get('/dashboard', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
@@ -84,8 +94,29 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    // Enhanced password complexity validation
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    }
+    
+    // Check for at least one uppercase letter
+    if (!/[A-Z]/.test(password)) {
+      return res.status(400).json({ error: 'Password must contain at least one uppercase letter' });
+    }
+    
+    // Check for at least one lowercase letter
+    if (!/[a-z]/.test(password)) {
+      return res.status(400).json({ error: 'Password must contain at least one lowercase letter' });
+    }
+    
+    // Check for at least one number
+    if (!/\d/.test(password)) {
+      return res.status(400).json({ error: 'Password must contain at least one number' });
+    }
+    
+    // Check for at least one special character
+    if (!/[@$!%*?&]/.test(password)) {
+      return res.status(400).json({ error: 'Password must contain at least one special character (@$!%*?&)' });
     }
 
     // Check if user exists
@@ -201,17 +232,28 @@ app.get('/api/user/history', requireAuth, async (req, res) => {
 
 // ==================== PAYMENT ENDPOINTS ====================
 
+// Define payment packages (server-side only)
+const PAYMENT_PACKAGES = {
+  'starter-pack': {
+    credits: 100,
+    amount: 10,
+    stripeUrl: 'https://buy.stripe.com/14AdR89kIbVBgAPbxF7AI00'
+  }
+};
+
 // Create a pending purchase record
 app.post('/api/payments/create-purchase', requireAuth, async (req, res) => {
   try {
-    const { credits, amount, email } = req.body;
+    const { packageId } = req.body;
     
-    // Validate the payment matches our €10 package
-    if (amount !== 10 || credits !== 100) {
+    // Validate package exists
+    const package = PAYMENT_PACKAGES[packageId];
+    if (!package) {
       return res.status(400).json({ error: 'Invalid payment package' });
     }
 
-    const purchaseId = Date.now().toString() + '_' + req.user.id;
+    const purchaseId = require('crypto').randomUUID() + '_' + req.user.id;
+    const { credits, amount } = package;
     
     // Store pending purchase in database
     const db = require('sqlite3').verbose();
@@ -229,7 +271,12 @@ app.post('/api/payments/create-purchase', requireAuth, async (req, res) => {
     
     database.close();
     
-    res.json({ purchaseId });
+    res.json({ 
+      purchaseId,
+      stripeUrl: package.stripeUrl,
+      credits: package.credits,
+      amount: package.amount
+    });
   } catch (error) {
     console.error('Create purchase error:', error);
     res.status(500).json({ error: 'Failed to create purchase' });
@@ -679,12 +726,17 @@ app.post('/api/scrape', requireAuth, async (req, res) => {
 });
 
 // Get scraping status
-app.get('/api/status/:sessionId', (req, res) => {
+app.get('/api/status/:sessionId', requireAuth, (req, res) => {
   const { sessionId } = req.params;
   const session = activeSessions.get(sessionId);
   
   if (!session) {
     return res.status(404).json({ error: 'Session not found' });
+  }
+  
+  // Check session ownership
+  if (session.userId !== req.user.id) {
+    return res.status(403).json({ error: 'Access denied - session belongs to another user' });
   }
   
   // Determine completion status
@@ -723,12 +775,17 @@ app.get('/api/status/:sessionId', (req, res) => {
 });
 
 // Export results as CSV
-app.get('/api/export/:sessionId/csv', (req, res) => {
+app.get('/api/export/:sessionId/csv', requireAuth, (req, res) => {
   const { sessionId } = req.params;
   const session = activeSessions.get(sessionId);
   
   if (!session || !session.results) {
     return res.status(404).json({ error: 'No results found' });
+  }
+  
+  // Check session ownership
+  if (session.userId !== req.user.id) {
+    return res.status(403).json({ error: 'Access denied - session belongs to another user' });
   }
   
   const csv = 'Name,Address,Phone,Email,Website\n' + 
@@ -740,12 +797,17 @@ app.get('/api/export/:sessionId/csv', (req, res) => {
 });
 
 // Export results as JSON
-app.get('/api/export/:sessionId/json', (req, res) => {
+app.get('/api/export/:sessionId/json', requireAuth, (req, res) => {
   const { sessionId } = req.params;
   const session = activeSessions.get(sessionId);
   
   if (!session || !session.results) {
     return res.status(404).json({ error: 'No results found' });
+  }
+  
+  // Check session ownership
+  if (session.userId !== req.user.id) {
+    return res.status(403).json({ error: 'Access denied - session belongs to another user' });
   }
   
   res.setHeader('Content-Type', 'application/json');
