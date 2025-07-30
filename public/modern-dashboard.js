@@ -19,25 +19,42 @@ const buyCreditsModal = document.getElementById('buyCreditsModal');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    checkAuth();
-    setupEventListeners();
-    setupAnimations();
+    console.log('Dashboard JS loaded');
+    try {
+        checkAuth();
+        setupEventListeners();
+        setupAnimations();
+        console.log('Dashboard initialization complete');
+    } catch (error) {
+        console.error('Dashboard initialization error:', error);
+    }
 });
 
 // Setup event listeners
 function setupEventListeners() {
+    console.log('Setting up event listeners');
+    
     // Auth tab switching
     const authTabs = document.querySelectorAll('.auth-tab');
+    console.log('Found auth tabs:', authTabs.length);
     authTabs.forEach(tab => {
-        tab.addEventListener('click', () => {
+        tab.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('Auth tab clicked:', tab.dataset.tab);
             const targetTab = tab.dataset.tab;
             switchAuthTab(targetTab);
         });
     });
 
     // Form submissions
-    loginForm.addEventListener('submit', handleLogin);
-    registerForm.addEventListener('submit', handleRegister);
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+        console.log('Login form listener added');
+    }
+    if (registerForm) {
+        registerForm.addEventListener('submit', handleRegister);
+        console.log('Register form listener added');
+    }
 
     // Search functionality
     searchInput.addEventListener('keypress', (e) => {
@@ -94,12 +111,16 @@ function setupAnimations() {
 
 // Switch auth tabs
 function switchAuthTab(tab) {
+    console.log('Switching to tab:', tab);
     const authTabs = document.querySelectorAll('.auth-tab');
     const authForms = document.querySelectorAll('.auth-form');
+    
+    console.log('Found tabs:', authTabs.length, 'Found forms:', authForms.length);
     
     authTabs.forEach(t => {
         if (t.dataset.tab === tab) {
             t.classList.add('active');
+            console.log('Activated tab:', tab);
         } else {
             t.classList.remove('active');
         }
@@ -109,6 +130,7 @@ function switchAuthTab(tab) {
         if ((tab === 'login' && form.id === 'loginForm') || 
             (tab === 'register' && form.id === 'registerForm')) {
             form.classList.add('active');
+            console.log('Activated form:', form.id);
         } else {
             form.classList.remove('active');
         }
