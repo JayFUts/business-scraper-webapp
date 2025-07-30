@@ -13,6 +13,11 @@ const { generateToken, requireAuth, optionalAuth } = require('./auth');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy for Railway deployment
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: false // Allow inline scripts for simplicity
@@ -682,8 +687,36 @@ app.get('/api/status/:sessionId', (req, res) => {
     return res.status(404).json({ error: 'Session not found' });
   }
   
+  // Determine completion status
+  let status = 'processing';
+  let progress = 0;
+  
+  if (session.results !== null) {
+    status = 'completed';
+    progress = 100;
+  } else if (session.status.includes('Error:')) {
+    status = 'failed';
+    progress = 0;
+  } else {
+    // Try to extract progress from status messages
+    if (session.status.includes('(') && session.status.includes('/')) {
+      const match = session.status.match(/\((\d+)\/(\d+)\)/);
+      if (match) {
+        progress = Math.round((parseInt(match[1]) / parseInt(match[2])) * 100);
+      }
+    } else if (session.status.includes('Scrolling')) {
+      progress = 20;
+    } else if (session.status.includes('Extracting')) {
+      progress = 30;
+    } else if (session.status.includes('Processing')) {
+      progress = 40;
+    }
+  }
+  
   res.json({
-    status: session.status,
+    status: status,
+    message: session.status,
+    progress: progress,
     results: session.results,
     hasResults: session.results !== null
   });

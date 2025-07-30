@@ -616,7 +616,7 @@ async function startSearch() {
     if (statusContainerElement) statusContainerElement.style.display = 'block';
     if (resultsSectionElement) resultsSectionElement.style.display = 'none';
     
-    updateStatus('Initializing search...', 0);
+    updateStatus('🚀 Starting search... Grab a coffee, this takes 2-3 minutes!', 5);
     
     try {
         const response = await fetch('/api/scrape', {
@@ -654,15 +654,44 @@ async function checkSearchStatus() {
         if (response.ok) {
             const { status, progress, message, results } = data;
             
-            updateStatus(message || 'Processing...', progress);
+            // Make status messages more user-friendly
+            let friendlyMessage = message || 'Processing...';
+            
+            if (message) {
+                if (message.includes('Opening Google Maps')) {
+                    friendlyMessage = '🗺️ Opening Google Maps...';
+                } else if (message.includes('cookie consent')) {
+                    friendlyMessage = '🍪 Handling cookie consent...';
+                } else if (message.includes('Scrolling')) {
+                    friendlyMessage = '📜 Loading more businesses...';
+                } else if (message.includes('Extracting business listings')) {
+                    friendlyMessage = '🏢 Found businesses, extracting details...';
+                } else if (message.includes('Processing') && message.includes('businesses')) {
+                    friendlyMessage = '📋 Getting contact details...';
+                } else if (message.includes('Getting details for')) {
+                    const match = message.match(/Getting details for (.+?) \((\d+)\/(\d+)\)/);
+                    if (match) {
+                        friendlyMessage = `📞 Getting details for ${match[1]} (${match[2]}/${match[3]})`;
+                    }
+                } else if (message.includes('Checking website')) {
+                    friendlyMessage = '🌐 Checking business websites for emails...';
+                } else if (message.includes('Scraping completed')) {
+                    friendlyMessage = '✅ Search completed! Preparing results...';
+                }
+            }
+            
+            updateStatus(friendlyMessage, progress || 0);
             
             if (status === 'completed') {
                 clearInterval(statusCheckInterval);
-                displayResults(results);
-                resetSearchButton();
+                updateStatus('🎉 Search completed! Found ' + (results?.length || 0) + ' businesses', 100);
+                setTimeout(() => {
+                    displayResults(results);
+                    resetSearchButton();
+                }, 1000);
             } else if (status === 'failed') {
                 clearInterval(statusCheckInterval);
-                updateStatus('Search failed. Please try again.', 0);
+                updateStatus('❌ Search failed. Please try again.', 0);
                 resetSearchButton();
                 
                 // Refund credits on failure
