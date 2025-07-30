@@ -622,14 +622,14 @@ async function startSearch() {
         const response = await fetch('/api/scrape', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query })
+            body: JSON.stringify({ searchQuery: query })
         });
         
         const data = await response.json();
         
         if (response.ok) {
             currentSessionId = data.sessionId;
-            currentUser.credits = data.remainingCredits;
+            currentUser.credits = data.creditsRemaining;
             document.getElementById('creditsCount').textContent = currentUser.credits;
             
             // Start polling for status

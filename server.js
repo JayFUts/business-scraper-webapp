@@ -117,6 +117,7 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     console.log('🔐 Login attempt:', { email, passwordLength: password?.length });
+    console.log('📋 Request body:', req.body);
 
     if (!email || !password) {
       console.log('❌ Missing email or password');
@@ -597,10 +598,18 @@ function updateSessionStatus(sessionId, status) {
 app.post('/api/scrape', requireAuth, async (req, res) => {
   try {
     const { searchQuery } = req.body;
+    console.log('🔍 Scrape request received');
+    console.log('📋 Request body:', req.body);
+    console.log('📝 Search query:', searchQuery);
+    console.log('👤 User:', req.user ? req.user.email : 'NO USER');
+    console.log('🔄 Content-Type:', req.headers['content-type']);
     
     if (!searchQuery) {
+      console.log('❌ No search query provided in request body');
       return res.status(400).json({ error: 'Search query is required' });
     }
+
+    console.log('✅ Search query validation passed:', searchQuery);
 
     // Check if user has enough credits (10 credits per scrape)
     const creditsRequired = 10;
