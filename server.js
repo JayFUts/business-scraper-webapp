@@ -116,23 +116,40 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log('🔐 Login attempt:', { email, passwordLength: password?.length });
 
     if (!email || !password) {
+      console.log('❌ Missing email or password');
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
     // Find user
+    console.log('🔍 Looking for user:', email);
     const userData = await user.findUserByEmail(email);
-    if (!userData || !user.verifyPassword(password, userData.password_hash)) {
+    console.log('👤 User found:', userData ? 'YES' : 'NO');
+    
+    if (!userData) {
+      console.log('❌ User not found in database');
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+    
+    console.log('🔑 Verifying password...');
+    const passwordValid = user.verifyPassword(password, userData.password_hash);
+    console.log('✅ Password valid:', passwordValid);
+    
+    if (!passwordValid) {
+      console.log('❌ Password verification failed');
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
+    console.log('🎫 Generating token for user ID:', userData.id);
     const token = generateToken(userData.id);
 
     // Set session
     req.session.token = token;
     req.session.userId = userData.id;
-
+    
+    console.log('✅ Login successful for:', email);
     res.json({
       success: true,
       user: {
@@ -143,7 +160,7 @@ app.post('/api/auth/login', async (req, res) => {
       token
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('❌ Login error:', error);
     res.status(500).json({ error: 'Login failed' });
   }
 });
