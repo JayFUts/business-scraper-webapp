@@ -47,11 +47,13 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Serve static files
-app.use(express.static('public'));
-
-// Serve landing page as the default route
-app.get('/', (req, res) => {
+// Serve landing page as the default route (or redirect to dashboard if authenticated)
+app.get('/', optionalAuth, (req, res) => {
+  // If user is authenticated, redirect to dashboard
+  if (req.user) {
+    return res.redirect('/dashboard');
+  }
+  // Otherwise serve landing page
   res.sendFile(path.join(__dirname, 'public', 'landing.html'));
 });
 
@@ -59,6 +61,9 @@ app.get('/', (req, res) => {
 app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
+
+// Serve static files (after specific routes)
+app.use(express.static('public'));
 
 // Store active scraping sessions
 const activeSessions = new Map();
