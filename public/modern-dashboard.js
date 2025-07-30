@@ -189,9 +189,37 @@ function handleNavigation(section, clickedItem) {
     
     switch(section.toLowerCase()) {
         case 'search':
+            // Restore original search content if it was modified
             if (searchContainer) {
+                searchContainer.innerHTML = `
+                    <div class="search-header">
+                        <h1 class="page-title">Find Business Leads</h1>
+                        <p class="page-subtitle">Search Google Maps and extract 50+ businesses with contact information</p>
+                    </div>
+                
+                    <div class="search-card">
+                        <div class="search-input-group">
+                            <svg class="search-icon" viewBox="0 0 24 24" fill="none">
+                                <path d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <input type="text" id="searchInput" class="search-input" placeholder="e.g., restaurants in Amsterdam" value="restaurants in Amsterdam">
+                            <button id="searchButton" onclick="startSearch()" class="btn btn-primary search-btn">
+                                <span id="buttonText">Search</span>
+                                <div id="loadingSpinner" class="spinner" style="display: none;"></div>
+                            </button>
+                        </div>
+                        
+                        <div class="search-tips">
+                            <div class="tip">
+                                <svg class="tip-icon" viewBox="0 0 20 20" fill="none">
+                                    <path d="M9 11H11M9 7H11M9 15H11M19 10C19 14.9706 14.9706 19 10 19C1.02944 19 1 14.9706 1 10C1 5.02944 1.02944 1 10 1C14.9706 1 19 5.02944 19 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <span>Be specific with your search (e.g., "Italian restaurants in Rome")</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
                 searchContainer.style.display = 'block';
-                updatePageHeader('Find Business Leads', 'Search Google Maps and extract 50+ businesses with contact information');
             }
             break;
             
@@ -240,7 +268,7 @@ function showHistorySection() {
                     </div>
                     <h2 style="color: var(--gray-700); margin-bottom: var(--space-sm);">No Search History Yet</h2>
                     <p style="color: var(--gray-600); margin-bottom: var(--space-lg);">Your search history will appear here after you perform your first search.</p>
-                    <button onclick="handleNavigation('search', document.querySelector('.nav-item'))" class="btn btn-primary">
+                    <button onclick="goToSearch()" class="btn btn-primary">
                         <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
                             <path d="M17 17L13 13M15 9C15 12.3137 12.3137 15 9 15C5.68629 15 3 12.3137 3 9C3 5.68629 5.68629 3 9 3C12.3137 3 15 5.68629 15 9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
@@ -327,6 +355,15 @@ function showSettingsSection() {
             </div>
         `;
         mainContent.style.display = 'block';
+    }
+}
+
+// Go to search page (helper function)
+function goToSearch() {
+    console.log('Going to search page');
+    const searchNavItem = document.querySelector('.nav-item[href="#"]:first-of-type'); // First nav item is Search
+    if (searchNavItem) {
+        handleNavigation('Search', searchNavItem);
     }
 }
 
