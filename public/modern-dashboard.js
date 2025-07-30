@@ -224,6 +224,12 @@ async function handleLogin(e) {
     const errorDiv = document.getElementById('loginError');
     const submitButton = loginForm.querySelector('button[type="submit"]');
     
+    // Prevent multiple submissions
+    if (submitButton.disabled) return;
+    
+    // Clear previous errors
+    errorDiv.textContent = '';
+    
     // Add loading state
     submitButton.disabled = true;
     submitButton.innerHTML = `
@@ -246,7 +252,9 @@ async function handleLogin(e) {
             loginForm.reset();
             errorDiv.textContent = '';
         } else {
-            errorDiv.textContent = data.error || 'Login failed';
+            const errorMessage = data.error || 'Login failed - invalid email or password';
+            errorDiv.textContent = errorMessage;
+            console.log('Login failed:', response.status, errorMessage);
             shakeElement(loginForm);
         }
     } catch (error) {
@@ -271,6 +279,12 @@ async function handleRegister(e) {
     const password = document.getElementById('registerPassword').value;
     const errorDiv = document.getElementById('registerError');
     const submitButton = registerForm.querySelector('button[type="submit"]');
+    
+    // Prevent multiple submissions
+    if (submitButton.disabled) return;
+    
+    // Clear previous errors
+    errorDiv.textContent = '';
     
     // Add loading state
     submitButton.disabled = true;
@@ -304,7 +318,9 @@ async function handleRegister(e) {
                 errorDiv.textContent = '';
             }
         } else {
-            errorDiv.textContent = data.error || 'Registration failed';
+            const errorMessage = data.error || 'Registration failed';
+            errorDiv.textContent = errorMessage;
+            console.log('Registration failed:', response.status, errorMessage);
             shakeElement(registerForm);
         }
     } catch (error) {
