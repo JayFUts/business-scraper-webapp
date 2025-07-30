@@ -164,6 +164,11 @@ body {
 }
 
 .auth-form.active {
+    display: block !important;
+}
+
+/* Default login form visible */
+#loginForm {
     display: block;
 }
 

@@ -139,13 +139,17 @@ function switchAuthTab(tab) {
 
 // Check authentication
 async function checkAuth() {
+    console.log('Checking authentication...');
     try {
         const response = await fetch('/api/auth/me');
+        console.log('Auth response status:', response.status);
         if (response.ok) {
             const data = await response.json();
             currentUser = data.user;
+            console.log('User authenticated:', currentUser);
             showDashboard();
         } else {
+            console.log('User not authenticated, showing auth form');
             showAuth();
         }
     } catch (error) {
@@ -156,9 +160,22 @@ async function checkAuth() {
 
 // Show auth section
 function showAuth() {
-    authSection.style.display = 'flex';
-    appSection.style.display = 'none';
+    console.log('Showing auth section');
+    console.log('Auth section element:', authSection);
+    console.log('App section element:', appSection);
+    
+    if (authSection) {
+        authSection.style.display = 'flex';
+        console.log('Auth section display set to flex');
+    }
+    if (appSection) {
+        appSection.style.display = 'none';
+        console.log('App section hidden');
+    }
     isAuthenticated = false;
+    
+    // Ensure login form is active by default
+    switchAuthTab('login');
 }
 
 // Show dashboard
