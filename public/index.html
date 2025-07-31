@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- SheetJS for Excel export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
   <!-- Auth Section -->
@@ -246,6 +248,13 @@
                 <path d="M9 12H15M9 16H15M13 8L11 6L9 8M5 20H19C19.5304 20 20.0391 19.7893 20.4142 19.4142C20.7893 19.0391 21 18.5304 21 18V6C21 5.46957 20.7893 4.96086 20.4142 4.58579C20.0391 4.21071 19.5304 4 19 4H5C4.46957 4 3.96086 4.21071 3.58579 4.58579C3.21071 4.96086 3 5.46957 3 6V18C3 18.5304 3.21071 19.0391 3.58579 19.4142C3.96086 19.7893 4.46957 20 5 20Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
               Export JSON
+            </button>
+            <button id="exportExcelButton" class="btn btn-primary">
+              <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                <path d="M3.33331 2.5H16.6666C17.5833 2.5 18.3333 3.25 18.3333 4.16667V15.8333C18.3333 16.75 17.5833 17.5 16.6666 17.5H3.33331C2.41665 17.5 1.66665 16.75 1.66665 15.8333V4.16667C1.66665 3.25 2.41665 2.5 3.33331 2.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M1.66665 7.5H18.3333M5.83331 2.5V17.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Export Excel
             </button>
           </div>
         </div>

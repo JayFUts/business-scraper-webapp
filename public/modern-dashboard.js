@@ -246,6 +246,11 @@ function setupEventListeners() {
         exportJsonButton.addEventListener('click', () => exportResults('json'));
     }
     
+    const exportExcelButton = document.getElementById('exportExcelButton');
+    if (exportExcelButton) {
+        exportExcelButton.addEventListener('click', () => exportResults('excel'));
+    }
+    
     // Modal event listeners
     const modalOverlay = document.getElementById('modalOverlay');
     if (modalOverlay) {
@@ -495,8 +500,26 @@ function showHistorySection() {
                         <div class="history-item-meta">
                             <span class="business-count">${search.count || search.results?.length || 0} businesses found</span>
                             <div class="history-actions">
-                                <button onclick="viewSearchResults(${index})" class="btn btn-secondary btn-sm">View Results</button>
-                                <button onclick="exportSearchResults(${index}, 'csv')" class="btn btn-outline btn-sm">Export CSV</button>
+                                <button onclick="viewSearchResults(${index})" class="btn btn-secondary btn-sm">
+                                    <svg class="btn-icon" viewBox="0 0 20 20" fill="none" style="width: 16px; height: 16px;">
+                                        <path d="M10 12.5C11.3807 12.5 12.5 11.3807 12.5 10C12.5 8.61929 11.3807 7.5 10 7.5C8.61929 7.5 7.5 8.61929 7.5 10C7.5 11.3807 8.61929 12.5 10 12.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M2.04834 10C3.11834 6.50002 6.23167 4.16669 10 4.16669C13.7683 4.16669 16.8817 6.50002 17.9517 10C16.8817 13.5 13.7683 15.8334 10 15.8334C6.23167 15.8334 3.11834 13.5 2.04834 10Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                    View Results
+                                </button>
+                                <button onclick="exportSearchResults(${index}, 'csv')" class="btn btn-outline btn-sm">
+                                    <svg class="btn-icon" viewBox="0 0 20 20" fill="none" style="width: 16px; height: 16px;">
+                                        <path d="M4.16669 15.8334H15.8334V17.5H4.16669V15.8334ZM15.8334 8.33335L10 14.1667L4.16669 8.33335H7.50002V2.50002H12.5V8.33335H15.8334Z" fill="currentColor"/>
+                                    </svg>
+                                    CSV
+                                </button>
+                                <button onclick="exportSearchResults(${index}, 'excel')" class="btn btn-primary btn-sm">
+                                    <svg class="btn-icon" viewBox="0 0 20 20" fill="none" style="width: 16px; height: 16px;">
+                                        <path d="M3.33331 2.5H16.6666C17.5833 2.5 18.3333 3.25 18.3333 4.16667V15.8333C18.3333 16.75 17.5833 17.5 16.6666 17.5H3.33331C2.41665 17.5 1.66665 16.75 1.66665 15.8333V4.16667C1.66665 3.25 2.41665 2.5 3.33331 2.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M1.66665 7.5H18.3333M5.83331 2.5V17.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                    Excel
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1192,8 +1215,92 @@ function exportSearchResults(index, format) {
             exportToCSV(results, query);
         } else if (format === 'json') {
             exportToJSON(results, query);
+        } else if (format === 'excel') {
+            exportToExcel(results, query);
         }
     }
+}
+
+// Export to CSV function
+function exportToCSV(results, query) {
+    const headers = ['Name', 'Address', 'Phone', 'Email', 'Website'];
+    const csvContent = [
+        headers.join(','),
+        ...results.map(business => [
+            `"${(business.name || '').replace(/"/g, '""')}"`,
+            `"${(business.address || '').replace(/"/g, '""')}"`,
+            `"${(business.phone || '').replace(/"/g, '""')}"`,
+            `"${(business.email || '').replace(/"/g, '""')}"`,
+            `"${(business.website || '').replace(/"/g, '""')}"`
+        ].join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${query.replace(/[^a-z0-9]/gi, '_')}_results.csv`;
+    link.click();
+}
+
+// Export to JSON function
+function exportToJSON(results, query) {
+    const jsonContent = JSON.stringify({
+        query: query,
+        exportDate: new Date().toISOString(),
+        totalResults: results.length,
+        results: results
+    }, null, 2);
+    
+    const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${query.replace(/[^a-z0-9]/gi, '_')}_results.json`;
+    link.click();
+}
+
+// Export to Excel function (using SheetJS)
+function exportToExcel(results, query) {
+    // Create a new workbook
+    const wb = XLSX.utils.book_new();
+    
+    // Prepare data for Excel
+    const data = results.map(business => ({
+        'Business Name': business.name || '',
+        'Address': business.address || '',
+        'Phone Number': business.phone || '',
+        'Email Address': business.email || '',
+        'Website': business.website || ''
+    }));
+    
+    // Add search info sheet
+    const infoData = [
+        ['Search Query', query],
+        ['Export Date', new Date().toLocaleString()],
+        ['Total Results', results.length],
+        ['', ''],
+        ['Generated by', 'LeadFinders Business Scraper']
+    ];
+    
+    // Create worksheets
+    const wsInfo = XLSX.utils.aoa_to_sheet(infoData);
+    const wsResults = XLSX.utils.json_to_sheet(data);
+    
+    // Add worksheets to workbook
+    XLSX.utils.book_append_sheet(wb, wsInfo, 'Search Info');
+    XLSX.utils.book_append_sheet(wb, wsResults, 'Business Results');
+    
+    // Auto-size columns
+    const colWidths = [
+        { wch: 30 }, // Business Name
+        { wch: 40 }, // Address  
+        { wch: 15 }, // Phone
+        { wch: 25 }, // Email
+        { wch: 35 }  // Website
+    ];
+    wsResults['!cols'] = colWidths;
+    
+    // Export the file
+    XLSX.writeFile(wb, `${query.replace(/[^a-z0-9]/gi, '_')}_results.xlsx`);
 }
 
 // Check authentication
@@ -2219,7 +2326,36 @@ function createBusinessCard(business) {
 
 // Export results
 async function exportResults(format) {
-    if (!currentSessionId) return;
+    // For Excel export, use client-side export directly
+    if (format === 'excel') {
+        if (searchHistory.length > 0) {
+            const lastSearch = searchHistory[searchHistory.length - 1];
+            if (lastSearch && lastSearch.results) {
+                exportToExcel(lastSearch.results, lastSearch.query);
+                return;
+            }
+        }
+        alert('No results available for export');
+        return;
+    }
+    
+    // For CSV and JSON, use server-side export if sessionId available
+    if (!currentSessionId) {
+        // Fallback to client-side export for History tab results
+        if (searchHistory.length > 0) {
+            const lastSearch = searchHistory[searchHistory.length - 1];
+            if (lastSearch && lastSearch.results) {
+                if (format === 'csv') {
+                    exportToCSV(lastSearch.results, lastSearch.query);
+                } else if (format === 'json') {
+                    exportToJSON(lastSearch.results, lastSearch.query);
+                }
+                return;
+            }
+        }
+        alert('No results available for export');
+        return;
+    }
     
     try {
         const response = await fetch(`/api/export/${currentSessionId}/${format}`);
