@@ -49,6 +49,21 @@ function initDatabase() {
         FOREIGN KEY (user_id) REFERENCES users (id)
       )
     `);
+    
+    // Sent emails table
+    db.run(`
+      CREATE TABLE IF NOT EXISTS sent_emails (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        recipient_email TEXT NOT NULL,
+        business_name TEXT,
+        subject TEXT NOT NULL,
+        body TEXT NOT NULL,
+        sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        status TEXT DEFAULT 'sent',
+        FOREIGN KEY (user_id) REFERENCES users (id)
+      )
+    `);
 
     console.log('✅ Database tables initialized');
   });

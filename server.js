@@ -9,6 +9,7 @@ const path = require('path');
 // Import our modules
 const { user, usage } = require('./database');
 const { generateToken, requireAuth, optionalAuth } = require('./auth');
+const { verifyEmailConfig, sendEmail, emailProviders } = require('./email-config');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -367,7 +368,7 @@ app.post('/api/payments/complete-purchase', requireAuth, async (req, res) => {
   }
 });
 
-// ==================== EMAIL GENERATION ENDPOINT ====================
+// ==================== EMAIL ENDPOINTS ====================
 
 // Generate personalized email
 app.post('/api/generate-email', requireAuth, async (req, res) => {
@@ -468,6 +469,115 @@ Do not include "Subject:" in your response - just the email body.`;
   } catch (error) {
     console.error('Email generation error:', error);
     res.status(500).json({ error: 'Failed to generate email' });
+  }
+});
+
+// Get email providers info
+app.get('/api/email/providers', requireAuth, (req, res) => {
+  res.json({
+    providers: Object.keys(emailProviders).map(key => ({
+      id: key,
+      name: key.charAt(0).toUpperCase() + key.slice(1),
+      requiresAppPassword: emailProviders[key].requiresAppPassword,
+      helpUrl: emailProviders[key].authUrl
+    }))
+  });
+});
+
+// Verify email configuration
+app.post('/api/email/verify', requireAuth, async (req, res) => {
+  try {
+    const { provider, email, password, customHost, customPort } = req.body;
+    
+    if (!provider || !email || !password) {
+      return res.status(400).json({ error: 'Email configuration required' });
+    }
+    
+    const result = await verifyEmailConfig({
+      provider,
+      email,
+      password,
+      customHost,
+      customPort
+    });
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Email verification error:', error);
+    res.status(500).json({ error: 'Failed to verify email configuration' });
+  }
+});
+
+// Send email
+app.post('/api/email/send', requireAuth, async (req, res) => {
+  try {
+    const { to, subject, body, html, emailConfig } = req.body;
+    
+    if (!to || !subject || !body) {
+      return res.status(400).json({ error: 'Missing required email fields' });
+    }
+    
+    if (!emailConfig || !emailConfig.email || !emailConfig.password) {
+      return res.status(400).json({ error: 'Email configuration not set up' });
+    }
+    
+    // Send email
+    const result = await sendEmail(emailConfig, {
+      to,
+      subject,
+      body,
+      html,
+      fromName: emailConfig.companyName || currentUser.email
+    });
+    
+    if (result.success) {
+      // Record email sent in database
+      const db = require('sqlite3').verbose();
+      const database = new db.Database('./leadfinders.db');
+      
+      await new Promise((resolve, reject) => {
+        database.run(`
+          INSERT INTO sent_emails (user_id, recipient_email, subject, body, sent_at)
+          VALUES (?, ?, ?, ?, datetime('now'))
+        `, [req.user.id, to, subject, body], function(err) {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+      
+      database.close();
+    }
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Email send error:', error);
+    res.status(500).json({ error: 'Failed to send email' });
+  }
+});
+
+// Get sent emails history
+app.get('/api/email/history', requireAuth, async (req, res) => {
+  try {
+    const db = require('sqlite3').verbose();
+    const database = new db.Database('./leadfinders.db');
+    
+    const emails = await new Promise((resolve, reject) => {
+      database.all(`
+        SELECT * FROM sent_emails 
+        WHERE user_id = ? 
+        ORDER BY sent_at DESC 
+        LIMIT 50
+      `, [req.user.id], (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows);
+      });
+    });
+    
+    database.close();
+    res.json({ emails });
+  } catch (error) {
+    console.error('Email history error:', error);
+    res.status(500).json({ error: 'Failed to get email history' });
   }
 });
 

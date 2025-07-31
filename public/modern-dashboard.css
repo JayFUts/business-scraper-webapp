@@ -1540,8 +1540,8 @@ body {
 
 .email-settings {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-lg);
+    grid-template-columns: 1fr 2fr;
+    gap: var(--space-xl);
     margin-bottom: var(--space-2xl);
     padding: var(--space-xl);
     background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
@@ -1698,8 +1698,10 @@ body {
 }
 
 .modal-actions .btn-secondary {
-    background: linear-gradient(135deg, #64748b 0%, #475569 100%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+    border: 1px solid rgba(124, 58, 237, 0.2);
+    color: white;
+    box-shadow: 0 4px 14px 0 rgba(124, 58, 237, 0.25);
 }
 
 .modal-actions .btn-primary {
@@ -1708,8 +1710,10 @@ body {
 }
 
 .btn-success {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.3);
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    color: white;
+    box-shadow: 0 4px 14px 0 rgba(139, 92, 246, 0.3);
 }
 
 /* Settings Styles */
