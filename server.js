@@ -591,7 +591,13 @@ async function scrapeBusinesses(searchQuery, sessionId) {
       '--no-sandbox', 
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
-      '--disable-gpu'
+      '--disable-gpu',
+      '--memory-pressure-off',
+      '--max_old_space_size=4096',
+      '--aggressive-cache-discard',
+      '--disable-background-timer-throttling',
+      '--disable-backgrounding-occluded-windows',
+      '--disable-renderer-backgrounding'
     ]
   });
   
@@ -613,7 +619,7 @@ async function scrapeBusinesses(searchQuery, sessionId) {
       timeout: 30000 
     });
     
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(1000);
     
     // Handle consent if it appears
     updateSessionStatus(sessionId, 'Checking for cookie consent...');
@@ -629,24 +635,27 @@ async function scrapeBusinesses(searchQuery, sessionId) {
       if (acceptButton) {
         await acceptButton.click();
         updateSessionStatus(sessionId, 'Clicked accept button, waiting for redirect...');
-        await page.waitForTimeout(5000);
+        await page.waitForTimeout(2000);
       } else {
         const rejectButton = await page.$('input[type="submit"][value="Alles afwijzen"]');
         if (rejectButton) {
           await rejectButton.click();
-          await page.waitForTimeout(5000);
+          await page.waitForTimeout(2000);
         }
       }
     }
     
     updateSessionStatus(sessionId, 'Waiting for results to load...');
-    await page.waitForTimeout(5000);
+    await page.waitForTimeout(2000);
     
-    // Scroll to load more businesses
+    // Scroll to load more businesses with dynamic optimization
     updateSessionStatus(sessionId, 'Loading more businesses by scrolling...');
     
     const feed = await page.$('div[role="feed"]');
     if (feed) {
+      let previousCount = 0;
+      let noNewResultsCount = 0;
+      
       for (let i = 0; i < 10; i++) {
         updateSessionStatus(sessionId, `Scrolling to load more results... (${i + 1}/10)`);
         
@@ -657,7 +666,12 @@ async function scrapeBusinesses(searchQuery, sessionId) {
           }
         });
         
-        await page.waitForTimeout(3000);
+        // Dynamic wait time based on page loading state
+        const isLoading = await page.evaluate(() => {
+          return document.querySelector('[role="progressbar"]') !== null;
+        });
+        
+        await page.waitForTimeout(isLoading ? 2000 : 1000);
         
         const currentCount = await page.evaluate(() => {
           const feed = document.querySelector('div[role="feed"]');
@@ -666,13 +680,28 @@ async function scrapeBusinesses(searchQuery, sessionId) {
         
         console.log(`After scroll ${i + 1}: Found ${currentCount} businesses`);
         
-        if (i > 3 && currentCount >= 50) {
+        // Check if we found new results
+        if (currentCount === previousCount) {
+          noNewResultsCount++;
+        } else {
+          noNewResultsCount = 0;
+        }
+        
+        previousCount = currentCount;
+        
+        // Early termination conditions
+        if (currentCount >= 50) {
           console.log(`Found ${currentCount} businesses - target of 50+ reached`);
           break;
         }
         
-        if (i > 5 && currentCount < 20) {
-          console.log('Not finding many new results, stopping scroll');
+        if (noNewResultsCount >= 2) {
+          console.log(`No new results for ${noNewResultsCount} scrolls, stopping early`);
+          break;
+        }
+        
+        if (i > 3 && currentCount < 10) {
+          console.log('Very few results found, stopping scroll');
           break;
         }
       }
@@ -737,132 +766,60 @@ async function scrapeBusinesses(searchQuery, sessionId) {
       return results;
     });
     
-    // Get details for each business
-    updateSessionStatus(sessionId, `Processing ${businesses.length} businesses...`);
+    // Process businesses in parallel using multiple tabs
+    updateSessionStatus(sessionId, `Processing ${businesses.length} businesses in parallel...`);
+    const businessesToProcess = businesses.slice(0, 50);
     const detailedResults = [];
     
-    for (let i = 0; i < Math.min(businesses.length, 50); i++) {
-      const business = businesses[i];
-      updateSessionStatus(sessionId, `Getting details for ${business.name} (${i+1}/${Math.min(businesses.length, 50)})...`);
-      
-      try {
-        await page.goto(business.url, { 
-          waitUntil: 'domcontentloaded',
-          timeout: 15000 
+    // Create multiple pages for parallel processing
+    const numConcurrentTabs = 3;
+    const pages = [];
+    
+    try {
+      for (let i = 0; i < numConcurrentTabs; i++) {
+        const newPage = await browser.newPage();
+        await newPage.setExtraHTTPHeaders({
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         });
-        await page.waitForTimeout(2000);
-        
-        const details = await page.evaluate(() => {
-          const data = {
-            name: document.querySelector('h1')?.textContent || '',
-            address: document.querySelector('[data-item-id*="address"]')?.textContent || '',
-            phone: document.querySelector('[data-item-id*="phone"]')?.textContent || 
-                    document.querySelector('button[data-item-id*="phone"]')?.textContent || '',
-            website: null,
-            email: null
-          };
-          
-          // Look for website
-          const websiteSelectors = [
-            'a[data-item-id*="authority"]',
-            'a[href*="http"]:not([href*="google"]):not([href*="maps"])',
-            'button[data-item-id*="authority"]'
-          ];
-          
-          for (const selector of websiteSelectors) {
-            const el = document.querySelector(selector);
-            if (el) {
-              const href = el.getAttribute('href') || el.getAttribute('data-url');
-              if (href) {
-                const urlMatch = href.match(/[?&]q=([^&]+)/);
-                data.website = urlMatch ? decodeURIComponent(urlMatch[1]) : href;
-                break;
-              }
-            }
-          }
-          
-          // Look for email on Maps page
-          const pageText = document.body.textContent || '';
-          const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
-          const emailMatches = pageText.match(emailRegex);
-          
-          if (emailMatches && emailMatches.length > 0) {
-            const filteredEmails = emailMatches.filter(email => 
-              !email.includes('noreply') && 
-              !email.includes('no-reply') &&
-              !email.includes('support@google') &&
-              !email.includes('maps-noreply')
-            );
-            
-            if (filteredEmails.length > 0) {
-              data.email = filteredEmails[0];
-            }
-          }
-          
-          return data;
-        });
-        
-        // If no email found on Maps page and website is available, try to scrape the website
-        if (!details.email && details.website) {
-          updateSessionStatus(sessionId, `Checking website for ${business.name}...`);
-          
-          try {
-            let websiteUrl = details.website;
-            if (!websiteUrl.startsWith('http')) {
-              websiteUrl = 'https://' + websiteUrl;
-            }
-            
-            await page.goto(websiteUrl, { 
-              waitUntil: 'domcontentloaded',
-              timeout: 10000 
-            });
-            await page.waitForTimeout(2000);
-            
-            const websiteEmail = await page.evaluate(() => {
-              const pageText = document.body.textContent || '';
-              const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
-              const emailMatches = pageText.match(emailRegex);
-              
-              if (emailMatches && emailMatches.length > 0) {
-                const filteredEmails = emailMatches.filter(email => 
-                  !email.includes('noreply') && 
-                  !email.includes('no-reply') &&
-                  !email.includes('support@google') &&
-                  !email.includes('maps-noreply') &&
-                  !email.includes('example.com') &&
-                  !email.includes('test@')
-                );
-                
-                const priorityEmails = filteredEmails.filter(email =>
-                  email.includes('info@') || 
-                  email.includes('contact@') ||
-                  email.includes('hello@') ||
-                  email.includes('reservations@') ||
-                  email.includes('booking@')
-                );
-                
-                return priorityEmails.length > 0 ? priorityEmails[0] : 
-                       (filteredEmails.length > 0 ? filteredEmails[0] : null);
-              }
-              
-              return null;
-            });
-            
-            if (websiteEmail) {
-              details.email = websiteEmail;
-              console.log(`Found email on website for ${business.name}: ${websiteEmail}`);
-            }
-            
-          } catch (websiteError) {
-            console.log(`Failed to scrape website for ${business.name}:`, websiteError.message);
-          }
-        }
-        
-        detailedResults.push({ ...business, ...details });
-      } catch (error) {
-        console.log(`Failed to get details for ${business.name}:`, error.message);
-        detailedResults.push(business);
+        pages.push(newPage);
       }
+      
+      // Split businesses into chunks for parallel processing
+      const businessChunks = chunkArray(businessesToProcess, numConcurrentTabs);
+      let processedCount = 0;
+      
+      for (const chunk of businessChunks) {
+        updateSessionStatus(sessionId, `Processing businesses ${processedCount + 1}-${processedCount + chunk.length} of ${businessesToProcess.length}...`);
+        
+        // Process chunk in parallel
+        const chunkPromises = chunk.map((business, index) => {
+          const pageIndex = index % pages.length;
+          return processBusinessInPage(pages[pageIndex], business, sessionId);
+        });
+        
+        const chunkResults = await Promise.all(chunkPromises);
+        detailedResults.push(...chunkResults);
+        processedCount += chunk.length;
+        
+        console.log(`Completed ${processedCount}/${businessesToProcess.length} businesses`);
+      }
+      
+      // Close additional pages
+      for (const additionalPage of pages) {
+        await additionalPage.close();
+      }
+      
+    } catch (error) {
+      console.error('Error in parallel processing:', error);
+      // Close any remaining pages
+      for (const additionalPage of pages) {
+        try {
+          await additionalPage.close();
+        } catch (e) {
+          console.error('Error closing page:', e);
+        }
+      }
+      throw error;
     }
     
     updateSessionStatus(sessionId, 'Scraping completed!');
@@ -874,6 +831,135 @@ async function scrapeBusinesses(searchQuery, sessionId) {
   } finally {
     await browser.close();
   }
+}
+
+// Helper function to process a single business in parallel
+async function processBusinessInPage(page, business, sessionId) {
+  try {
+    await page.goto(business.url, { 
+      waitUntil: 'domcontentloaded',
+      timeout: 15000 
+    });
+    await page.waitForTimeout(1000);
+    
+    const details = await page.evaluate(() => {
+      const data = {
+        name: document.querySelector('h1')?.textContent || '',
+        address: document.querySelector('[data-item-id*="address"]')?.textContent || '',
+        phone: document.querySelector('[data-item-id*="phone"]')?.textContent || 
+                document.querySelector('button[data-item-id*="phone"]')?.textContent || '',
+        website: null,
+        email: null
+      };
+      
+      // Look for website
+      const websiteSelectors = [
+        'a[data-item-id*="authority"]',
+        'a[href*="http"]:not([href*="google"]):not([href*="maps"])',
+        'button[data-item-id*="authority"]'
+      ];
+      
+      for (const selector of websiteSelectors) {
+        const el = document.querySelector(selector);
+        if (el) {
+          const href = el.getAttribute('href') || el.getAttribute('data-url');
+          if (href) {
+            const urlMatch = href.match(/[?&]q=([^&]+)/);
+            data.website = urlMatch ? decodeURIComponent(urlMatch[1]) : href;
+            break;
+          }
+        }
+      }
+      
+      // Look for email on Maps page
+      const pageText = document.body.textContent || '';
+      const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
+      const emailMatches = pageText.match(emailRegex);
+      
+      if (emailMatches && emailMatches.length > 0) {
+        const filteredEmails = emailMatches.filter(email => 
+          !email.includes('noreply') && 
+          !email.includes('no-reply') &&
+          !email.includes('support@google') &&
+          !email.includes('maps-noreply')
+        );
+        
+        if (filteredEmails.length > 0) {
+          data.email = filteredEmails[0];
+        }
+      }
+      
+      return data;
+    });
+    
+    // If no email found on Maps page and website is available, try to scrape the website
+    if (!details.email && details.website) {
+      try {
+        let websiteUrl = details.website;
+        if (!websiteUrl.startsWith('http')) {
+          websiteUrl = 'https://' + websiteUrl;
+        }
+        
+        await page.goto(websiteUrl, { 
+          waitUntil: 'domcontentloaded',
+          timeout: 7000  // Reduced from 10000
+        });
+        await page.waitForTimeout(500);  // Reduced from 1000
+        
+        const websiteEmail = await page.evaluate(() => {
+          const pageText = document.body.textContent || '';
+          const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
+          const emailMatches = pageText.match(emailRegex);
+          
+          if (emailMatches && emailMatches.length > 0) {
+            const filteredEmails = emailMatches.filter(email => 
+              !email.includes('noreply') && 
+              !email.includes('no-reply') &&
+              !email.includes('support@google') &&
+              !email.includes('maps-noreply') &&
+              !email.includes('example.com') &&
+              !email.includes('test@')
+            );
+            
+            const priorityEmails = filteredEmails.filter(email =>
+              email.includes('info@') || 
+              email.includes('contact@') ||
+              email.includes('hello@') ||
+              email.includes('reservations@') ||
+              email.includes('booking@')
+            );
+            
+            return priorityEmails.length > 0 ? priorityEmails[0] : 
+                   (filteredEmails.length > 0 ? filteredEmails[0] : null);
+          }
+          
+          return null;
+        });
+        
+        if (websiteEmail) {
+          details.email = websiteEmail;
+          console.log(`Found email on website for ${business.name}: ${websiteEmail}`);
+        }
+        
+      } catch (websiteError) {
+        console.log(`Failed to scrape website for ${business.name}:`, websiteError.message);
+      }
+    }
+    
+    return { ...business, ...details };
+  } catch (error) {
+    console.log(`Failed to get details for ${business.name}:`, error.message);
+    return business;
+  }
+}
+
+// Helper function to chunk array for parallel processing
+function chunkArray(array, chunkSize) {
+  const chunks = [];
+  for (let i = 0; i < array.length; i += chunkSize) {
+    chunks.push(array.slice(i, i + chunkSize));
+  }
+  return chunks;
 }
 
 // Helper function to update session status
