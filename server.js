@@ -833,6 +833,37 @@ async function scrapeBusinesses(searchQuery, sessionId) {
   }
 }
 
+// Helper function to handle consent for any page
+async function handleConsentIfNeeded(page) {
+  try {
+    const isConsentPage = await page.evaluate(() => {
+      return document.body?.textContent?.includes('Voordat je verdergaat naar Google');
+    });
+    
+    if (isConsentPage) {
+      console.log('Handling cookie consent on business page...');
+      
+      const acceptButton = await page.$('input[type="submit"][value="Alles accepteren"]');
+      if (acceptButton) {
+        await acceptButton.click();
+        await page.waitForTimeout(2000);
+        return true;
+      } else {
+        const rejectButton = await page.$('input[type="submit"][value="Alles afwijzen"]');
+        if (rejectButton) {
+          await rejectButton.click();
+          await page.waitForTimeout(2000);
+          return true;
+        }
+      }
+    }
+    return false;
+  } catch (error) {
+    console.log('Error handling consent:', error.message);
+    return false;
+  }
+}
+
 // Helper function to process a single business in parallel
 async function processBusinessInPage(page, business, sessionId) {
   try {
@@ -841,6 +872,9 @@ async function processBusinessInPage(page, business, sessionId) {
       timeout: 15000 
     });
     await page.waitForTimeout(1000);
+    
+    // Handle consent if needed
+    await handleConsentIfNeeded(page);
     
     const details = await page.evaluate(() => {
       const data = {
@@ -905,6 +939,9 @@ async function processBusinessInPage(page, business, sessionId) {
           timeout: 7000  // Reduced from 10000
         });
         await page.waitForTimeout(500);  // Reduced from 1000
+        
+        // Handle consent if needed on website
+        await handleConsentIfNeeded(page);
         
         const websiteEmail = await page.evaluate(() => {
           const pageText = document.body.textContent || '';
