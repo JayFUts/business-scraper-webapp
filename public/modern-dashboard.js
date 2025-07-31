@@ -846,6 +846,166 @@ function showCompletionNotification(resultCount, searchQuery) {
     }, 10000);
 }
 
+// Generate personalized email
+async function generatePersonalizedEmail(business) {
+    // Show loading modal
+    showEmailModal(business, null, true);
+    
+    try {
+        const response = await fetch('/api/generate-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                businessName: business.name,
+                businessInfo: {
+                    type: business.type || 'Business',
+                    address: business.address,
+                    website: business.website,
+                    phone: business.phone
+                },
+                userCompany: localStorage.getItem('userCompany') || '',
+                userProduct: localStorage.getItem('userProduct') || ''
+            })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to generate email');
+        }
+        
+        const emailData = await response.json();
+        showEmailModal(business, emailData, false);
+        
+    } catch (error) {
+        console.error('Email generation error:', error);
+        alert('Failed to generate email: ' + error.message);
+        closeEmailModal();
+    }
+}
+
+// Show email modal
+function showEmailModal(business, emailData, isLoading) {
+    // Remove existing modal if any
+    const existingModal = document.getElementById('emailModal');
+    if (existingModal) existingModal.remove();
+    
+    const modal = document.createElement('div');
+    modal.id = 'emailModal';
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content email-modal">
+            <div class="modal-header">
+                <h2>Personalized Email for ${escapeHtml(business.name)}</h2>
+                <button class="modal-close" onclick="closeEmailModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                ${isLoading ? `
+                    <div class="email-loading">
+                        <div class="spinner"></div>
+                        <p>Generating personalized email...</p>
+                    </div>
+                ` : `
+                    <div class="email-settings">
+                        <div class="form-group">
+                            <label>Your Company Name</label>
+                            <input type="text" id="userCompany" class="form-input" placeholder="Your company name" value="${escapeHtml(localStorage.getItem('userCompany') || '')}">
+                        </div>
+                        <div class="form-group">
+                            <label>Your Product/Service</label>
+                            <input type="text" id="userProduct" class="form-input" placeholder="What you offer" value="${escapeHtml(localStorage.getItem('userProduct') || '')}">
+                        </div>
+                    </div>
+                    <div class="email-preview">
+                        <div class="form-group">
+                            <label>Subject</label>
+                            <input type="text" id="emailSubject" class="form-input" value="${escapeHtml(emailData.subject)}">
+                        </div>
+                        <div class="form-group">
+                            <label>Email Content</label>
+                            <textarea id="emailBody" class="form-input email-textarea" rows="10">${escapeHtml(emailData.body)}</textarea>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn btn-secondary" onclick="regenerateEmail('${escapeHtml(JSON.stringify(business))}')">
+                            <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                                <path d="M4 2V7H9M16 18V13H11M3.51 9C3.92 6.64 5.18 4.56 7.06 3.16C9.84 1.02 13.59 0.65 16.71 2.28M16.49 11C16.08 13.36 14.82 15.44 12.94 16.84C10.16 18.98 6.41 19.35 3.29 17.72" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Regenerate
+                        </button>
+                        <button class="btn btn-primary" onclick="copyEmail()">
+                            <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                                <path d="M8 4H6C5.46957 4 4.96086 4.21071 4.58579 4.58579C4.21071 4.96086 4 5.46957 4 6V18C4 18.5304 4.21071 19.0391 4.58579 19.4142C4.96086 19.7893 5.46957 20 6 20H14C14.5304 20 15.0391 19.7893 15.4142 19.4142C15.7893 19.0391 16 18.5304 16 18V16M8 4V2C8 1.46957 8.21071 0.960859 8.58579 0.585786C8.96086 0.210714 9.46957 0 10 0H14L20 6V14C20 14.5304 19.7893 15.0391 19.4142 15.4142C19.0391 15.7893 18.5304 16 18 16H16M8 4H10C10.5304 4 11.0391 4.21071 11.4142 4.58579C11.7893 4.96086 12 5.46957 12 6V8H16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Copy to Clipboard
+                        </button>
+                        <a href="mailto:${business.email}?subject=${encodeURIComponent(emailData.subject)}&body=${encodeURIComponent(emailData.body)}" class="btn btn-primary">
+                            <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                                <path d="M3 8L10.89 13.26C11.2187 13.4793 11.6049 13.5963 12 13.5963C12.3951 13.5963 12.7813 13.4793 13.11 13.26L21 8M5 19H19C19.5304 19 20.0391 18.7893 20.4142 18.4142C20.7893 18.0391 21 17.5304 21 17V7C21 6.46957 20.7893 5.96086 20.4142 5.58579C20.0391 5.21071 19.5304 5 19 5H5C4.46957 5 3.96086 5.21071 3.58579 5.58579C3.21071 5.96086 3 6.46957 3 7V17C3 17.5304 3.21071 18.0391 3.58579 18.4142C3.96086 18.7893 4.46957 19 5 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Open in Email Client
+                        </a>
+                    </div>
+                `}
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.style.display = 'flex';
+    
+    // Save company info when changed
+    if (!isLoading) {
+        document.getElementById('userCompany').addEventListener('change', (e) => {
+            localStorage.setItem('userCompany', e.target.value);
+        });
+        document.getElementById('userProduct').addEventListener('change', (e) => {
+            localStorage.setItem('userProduct', e.target.value);
+        });
+    }
+}
+
+// Close email modal
+function closeEmailModal() {
+    const modal = document.getElementById('emailModal');
+    if (modal) modal.remove();
+}
+
+// Copy email to clipboard
+async function copyEmail() {
+    const subject = document.getElementById('emailSubject').value;
+    const body = document.getElementById('emailBody').value;
+    const fullEmail = `Subject: ${subject}\n\n${body}`;
+    
+    try {
+        await navigator.clipboard.writeText(fullEmail);
+        
+        // Show success feedback
+        const copyBtn = event.target.closest('button');
+        const originalText = copyBtn.innerHTML;
+        copyBtn.innerHTML = `
+            <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                <path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Copied!
+        `;
+        copyBtn.classList.add('btn-success');
+        
+        setTimeout(() => {
+            copyBtn.innerHTML = originalText;
+            copyBtn.classList.remove('btn-success');
+        }, 2000);
+    } catch (err) {
+        console.error('Failed to copy:', err);
+        alert('Failed to copy to clipboard');
+    }
+}
+
+// Regenerate email
+async function regenerateEmail(businessJson) {
+    const business = JSON.parse(businessJson);
+    generatePersonalizedEmail(business);
+}
+
 // Navigate to results tab
 function viewResults() {
     // Find Results nav item by text content
@@ -1088,6 +1248,27 @@ function viewSearchResults(searchId) {
             }
             
             card.appendChild(contact);
+            
+            // Add email generation button if email exists
+            if (business.email) {
+                const actions = document.createElement('div');
+                actions.className = 'business-actions';
+                
+                const emailButton = document.createElement('button');
+                emailButton.className = 'btn btn-primary btn-sm generate-email-btn';
+                emailButton.innerHTML = `
+                    <svg class="btn-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 5C3 4.44772 3.44772 4 4 4H16C16.5523 4 17 4.44772 17 5V15C17 15.5523 16.5523 16 16 16H4C3.44772 16 3 15.5523 3 15V5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M3 5L10 11L17 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Create Personalized Email
+                `;
+                emailButton.onclick = () => generatePersonalizedEmail(business);
+                
+                actions.appendChild(emailButton);
+                card.appendChild(actions);
+            }
+            
             businessGrid.appendChild(card);
         });
         

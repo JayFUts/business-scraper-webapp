@@ -348,6 +348,95 @@ app.post('/api/payments/complete-purchase', requireAuth, async (req, res) => {
   }
 });
 
+// ==================== EMAIL GENERATION ENDPOINT ====================
+
+// Generate personalized email
+app.post('/api/generate-email', requireAuth, async (req, res) => {
+  try {
+    const { businessName, businessInfo, userCompany, userProduct } = req.body;
+    
+    if (!businessName || !businessInfo) {
+      return res.status(400).json({ error: 'Business information required' });
+    }
+    
+    // Check if user has OpenAI API key configured (for now, we'll use a server key)
+    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+    if (!OPENAI_API_KEY) {
+      return res.status(500).json({ error: 'Email generation not configured. Please contact support.' });
+    }
+    
+    // Create prompt for GPT
+    const prompt = `Generate a professional, personalized cold email for the following business:
+
+Business Name: ${businessName}
+Business Type: ${businessInfo.type || 'Business'}
+Location: ${businessInfo.address || 'Not specified'}
+Website: ${businessInfo.website || 'Not specified'}
+
+User's Company: ${userCompany || 'Our company'}
+User's Product/Service: ${userProduct || 'our services'}
+
+Write a short, personalized email (max 150 words) that:
+1. Shows you've researched their business
+2. Identifies a specific problem they might have
+3. Briefly explains how your product/service can help
+4. Includes a clear call-to-action
+5. Uses a friendly, professional tone
+
+The email should be in the same language as the business location (Dutch for Netherlands addresses, English otherwise).`;
+
+    // Call OpenAI API
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert at writing personalized cold emails that get responses. Keep emails short, relevant, and focused on value.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 400
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('OpenAI API error:', error);
+      return res.status(500).json({ error: 'Failed to generate email' });
+    }
+
+    const data = await response.json();
+    const emailContent = data.choices[0].message.content;
+    
+    // Extract subject line if GPT included one, otherwise generate
+    let subject = `Introducing ${userProduct || 'our services'} to ${businessName}`;
+    const subjectMatch = emailContent.match(/Subject:\s*(.+?)(?:\n|$)/i);
+    if (subjectMatch) {
+      subject = subjectMatch[1];
+    }
+    
+    res.json({
+      subject,
+      body: emailContent.replace(/Subject:\s*.+?\n/i, '').trim(),
+      tokens_used: data.usage.total_tokens
+    });
+    
+  } catch (error) {
+    console.error('Email generation error:', error);
+    res.status(500).json({ error: 'Failed to generate email' });
+  }
+});
+
 // ==================== SCRAPING ENDPOINTS ====================
 
 // Main scraping function (converted from Electron version)
