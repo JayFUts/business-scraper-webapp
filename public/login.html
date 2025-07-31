@@ -110,13 +110,20 @@
         }
 
         .btn-login {
-            background: var(--gradient-primary);
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
             color: white;
+            position: relative;
+            overflow: hidden;
         }
 
         .btn-login:hover {
             transform: translateY(-1px);
-            box-shadow: var(--shadow-lg);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            background: linear-gradient(135deg, #5558e8 0%, #7c4ee0 100%);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
         }
 
         .auth-divider {
