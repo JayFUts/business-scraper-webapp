@@ -1136,7 +1136,6 @@ async function generatePersonalizedEmail(business) {
         const emailData = await response.json();
         
         // Add signature if available
-        const savedSettings = JSON.parse(localStorage.getItem('userSettings') || '{}');
         if (savedSettings.emailSignature) {
             emailData.body = emailData.body + '\n\n' + savedSettings.emailSignature;
         }
