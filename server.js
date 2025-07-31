@@ -873,9 +873,9 @@ async function processBusinessInPage(page, business, sessionId, businessIndex = 
       timeout: 15000 
     });
     
-    // Progressive delay - longer waits for later businesses to avoid rate limiting
-    const baseDelay = 1500;
-    const additionalDelay = Math.min(businessIndex * 50, 1000); // Max 1 extra second
+    // Light progressive delay - minimal increase to avoid rate limiting but stay fast
+    const baseDelay = 1000; // Reduced from 1500
+    const additionalDelay = Math.min(businessIndex * 10, 200); // Much smaller: max +200ms
     await page.waitForTimeout(baseDelay + additionalDelay);
     
     // Handle consent if needed
@@ -990,9 +990,9 @@ async function processBusinessInPage(page, business, sessionId, businessIndex = 
         
         await page.goto(websiteUrl, { 
           waitUntil: 'domcontentloaded',
-          timeout: 7000  // Reduced from 10000
+          timeout: 5000  // Further reduced for speed
         });
-        await page.waitForTimeout(500);  // Reduced from 1000
+        await page.waitForTimeout(300);  // Further reduced
         
         // Handle consent if needed on website
         await handleConsentIfNeeded(page);
