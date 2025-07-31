@@ -50,6 +50,15 @@ let statusCheckInterval = null;
 let searchHistory = []; // Store completed searches
 let activeSearch = null; // Track active search state
 let isSearchInProgress = false; // Track if search is in progress
+let sentEmails = []; // Store sent emails history
+let userSettings = {
+    companyName: '',
+    companyDescription: '',
+    services: '',
+    contactPerson: '',
+    emailSignature: '',
+    companyLogo: null
+};
 
 // DOM elements
 const authSection = document.getElementById('authSection');
@@ -323,6 +332,10 @@ function handleNavigation(section, clickedItem) {
             showResultsSection();
             break;
             
+        case 'emails sent':
+            showEmailsSentSection();
+            break;
+            
         case 'settings':
             showSettingsSection();
             break;
@@ -481,99 +494,314 @@ function showResultsSection() {
     }
 }
 
+// Show emails sent section
+function showEmailsSentSection() {
+    updatePageHeader('Emails Sent', 'View and manage your sent personalized emails');
+    
+    const mainContent = document.querySelector('.search-container');
+    if (mainContent) {
+        // Load sent emails from localStorage
+        const savedEmails = JSON.parse(localStorage.getItem('sentEmails') || '[]');
+        
+        mainContent.innerHTML = `
+            <div class="search-header">
+                <h1 class="page-title">Emails Sent</h1>
+                <p class="page-subtitle">View and manage your sent personalized emails</p>
+            </div>
+            <div class="emails-sent-content">
+                ${savedEmails.length === 0 ? `
+                    <div class="empty-state">
+                        <div class="empty-icon">📧</div>
+                        <h3>No emails sent yet</h3>
+                        <p>When you generate and send personalized emails, they'll appear here.</p>
+                    </div>
+                ` : `
+                    <div class="emails-grid">
+                        ${savedEmails.map(email => `
+                            <div class="email-card">
+                                <div class="email-header">
+                                    <h4>${escapeHtml(email.businessName)}</h4>
+                                    <span class="email-date">${email.sentAt}</span>
+                                </div>
+                                <div class="email-preview">
+                                    <strong>Subject:</strong> ${escapeHtml(email.subject)}<br>
+                                    <div class="email-body-preview">${escapeHtml(email.body.substring(0, 150))}...</div>
+                                </div>
+                                <div class="email-actions">
+                                    <button onclick="viewFullEmail('${email.id}')" class="btn btn-secondary btn-sm">View Full</button>
+                                    <a href="mailto:${email.businessEmail}?subject=${encodeURIComponent(email.subject)}&body=${encodeURIComponent(email.body)}" class="btn btn-primary btn-sm">Send Again</a>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `}
+            </div>
+        `;
+        mainContent.style.display = 'block';
+    }
+}
+
 // Show settings section  
 function showSettingsSection() {
-    updatePageHeader('Account Settings', 'Manage your account and preferences');
+    updatePageHeader('Settings', 'Configure your business information and email preferences');
+    
+    // Load settings from localStorage
+    const savedSettings = JSON.parse(localStorage.getItem('userSettings') || '{}');
+    userSettings = { ...userSettings, ...savedSettings };
     
     const mainContent = document.querySelector('.search-container');
     if (mainContent) {
         mainContent.innerHTML = `
             <div class="search-header">
-                <h1 class="page-title">Account Settings</h1>
-                <p class="page-subtitle">Manage your account and preferences</p>
+                <h1 class="page-title">Settings</h1>
+                <p class="page-subtitle">Configure your business information and email preferences</p>
             </div>
             <div class="settings-content">
+                <!-- Account Information -->
                 <div class="settings-section">
-                    <h2 class="settings-title">Account Information</h2>
+                    <h2 class="settings-title">
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none">
+                            <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Account Information
+                    </h2>
                     <div class="settings-card">
                         <div class="setting-item">
                             <div class="setting-label">
                                 <strong>Email Address</strong>
-                                <p style="color: var(--gray-600); font-size: 0.875rem;">Your account email address</p>
+                                <p>Your account email address</p>
                             </div>
                             <div class="setting-value">
-                                <span style="color: var(--gray-700);" id="userEmailDisplay">Loading...</span>
+                                <span id="userEmailDisplay">Loading...</span>
                             </div>
                         </div>
                         <div class="setting-item">
                             <div class="setting-label">
                                 <strong>Account Credits</strong>
-                                <p style="color: var(--gray-600); font-size: 0.875rem;">Available search credits</p>
+                                <p>Available search credits</p>
                             </div>
                             <div class="setting-value">
-                                <span style="color: var(--primary); font-weight: 600;" id="userCreditsDisplay">Loading...</span>
-                                <button id="buyMoreCreditsButton" class="btn btn-primary btn-small" style="margin-left: var(--space-sm);">Buy More</button>
+                                <span id="userCreditsDisplay" class="credits-display">Loading...</span>
+                                <button id="buyMoreCreditsButton" class="btn btn-primary btn-sm">Buy More Credits</button>
                             </div>
                         </div>
                     </div>
                 </div>
                 
+                <!-- Business Information -->
                 <div class="settings-section">
-                    <h2 class="settings-title">Preferences</h2>
+                    <h2 class="settings-title">
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none">
+                            <path d="M19 21V5C19 4.44772 18.5523 4 18 4H6C5.44772 4 5 4.44772 5 5V21L12 17L19 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Business Information
+                    </h2>
                     <div class="settings-card">
-                        <div class="setting-item">
-                            <div class="setting-label">
-                                <strong>Export Format</strong>
-                                <p style="color: var(--gray-600); font-size: 0.875rem;">Default format for exporting results</p>
-                            </div>
-                            <div class="setting-value">
-                                <select class="form-control" style="padding: var(--space-xs) var(--space-sm); border: 1px solid var(--gray-300); border-radius: var(--radius-md);">
-                                    <option value="csv">CSV</option>
-                                    <option value="json">JSON</option>
-                                </select>
-                            </div>
+                        <div class="form-group">
+                            <label class="form-label">Company Name</label>
+                            <input type="text" id="companyName" class="form-input" placeholder="Your company name" value="${escapeHtml(userSettings.companyName || '')}">
+                            <small>This will be used in personalized emails</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Company Description</label>
+                            <textarea id="companyDescription" class="form-input" rows="3" placeholder="Brief description of your company...">${escapeHtml(userSettings.companyDescription || '')}</textarea>
+                            <small>Help AI understand your business better</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Services/Products</label>
+                            <input type="text" id="services" class="form-input" placeholder="e.g., Web development, Marketing, Consulting" value="${escapeHtml(userSettings.services || '')}">
+                            <small>What do you offer? This helps personalize emails</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Contact Person</label>
+                            <input type="text" id="contactPerson" class="form-input" placeholder="Your name or sales person name" value="${escapeHtml(userSettings.contactPerson || '')}">
+                            <small>Name to use in email signatures</small>
                         </div>
                     </div>
                 </div>
                 
+                <!-- Email Settings -->
                 <div class="settings-section">
-                    <h2 class="settings-title" style="color: var(--error);">Danger Zone</h2>
-                    <div class="settings-card" style="border-color: var(--error);">
-                        <div class="setting-item">
-                            <div class="setting-label">
-                                <strong>Sign Out</strong>
-                                <p style="color: var(--gray-600); font-size: 0.875rem;">Sign out of your account</p>
+                    <h2 class="settings-title">
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none">
+                            <path d="M3 8L10.89 13.26C11.2187 13.4793 11.6049 13.5963 12 13.5963C12.3951 13.5963 12.7813 13.4793 13.11 13.26L21 8M5 19H19C19.5304 19 20.0391 18.7893 20.4142 18.4142C20.7893 18.0391 21 17.5304 21 17V7C21 6.46957 20.7893 5.96086 20.4142 5.58579C20.0391 5.21071 19.5304 5 19 5H5C4.46957 5 3.96086 5.21071 3.58579 5.58579C3.21071 5.96086 3 6.46957 3 7V17C3 17.5304 3.21071 18.0391 3.58579 18.4142C3.96086 18.7893 4.46957 19 5 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Email Configuration
+                    </h2>
+                    <div class="settings-card">
+                        <div class="form-group">
+                            <label class="form-label">Email Signature</label>
+                            <textarea id="emailSignature" class="form-input" rows="6" placeholder="Best regards,
+[Your Name]
+[Your Title]
+[Company Name]
+[Phone] | [Email] | [Website]">${escapeHtml(userSettings.emailSignature || '')}</textarea>
+                            <small>This signature will be automatically added to generated emails</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Company Logo</label>
+                            <div class="logo-upload-area">
+                                <input type="file" id="logoUpload" accept="image/*" style="display: none;">
+                                <div class="logo-preview" id="logoPreview">
+                                    ${userSettings.companyLogo ? `<img src="${userSettings.companyLogo}" alt="Company Logo">` : '<div class="logo-placeholder">📷 Upload Logo</div>'}
+                                </div>
+                                <div class="logo-actions">
+                                    <button onclick="document.getElementById('logoUpload').click()" class="btn btn-secondary btn-sm">Choose Image</button>
+                                    ${userSettings.companyLogo ? '<button onclick="removeLogo()" class="btn btn-outline btn-sm">Remove</button>' : ''}
+                                </div>
                             </div>
-                            <div class="setting-value">
-                                <button onclick="logout()" class="btn btn-secondary" style="color: var(--error); border-color: var(--error);">
-                                    Sign Out
-                                </button>
-                            </div>
+                            <small>Recommended: 200x80px, PNG/JPG format</small>
                         </div>
                     </div>
+                </div>
+                
+                <!-- Save Button -->
+                <div class="settings-actions">
+                    <button onclick="saveSettings()" class="btn btn-primary btn-large">Save Settings</button>
+                    <button onclick="resetSettings()" class="btn btn-outline btn-large">Reset to Defaults</button>
                 </div>
             </div>
         `;
-        
-        // Safely populate user data after HTML is created
-        setTimeout(() => {
-            const userEmailDisplay = document.getElementById('userEmailDisplay');
-            const userCreditsDisplay = document.getElementById('userCreditsDisplay');
-            const buyMoreCreditsButton = document.getElementById('buyMoreCreditsButton');
-            
-            if (userEmailDisplay) {
-                setTextContent(userEmailDisplay, currentUser ? currentUser.email : 'Not available');
-            }
-            if (userCreditsDisplay) {
-                setTextContent(userCreditsDisplay, currentUser ? `${currentUser.credits} credits` : '0 credits');
-            }
-            if (buyMoreCreditsButton) {
-                buyMoreCreditsButton.addEventListener('click', showBuyCredits);
-            }
-        }, 0);
-        
         mainContent.style.display = 'block';
+        
+        // Initialize settings
+        initializeSettings();
     }
+}
+
+// Initialize settings functionality
+function initializeSettings() {
+    // Populate user data
+    setTimeout(() => {
+        const userEmailDisplay = document.getElementById('userEmailDisplay');
+        const userCreditsDisplay = document.getElementById('userCreditsDisplay');
+        const buyMoreCreditsButton = document.getElementById('buyMoreCreditsButton');
+        
+        if (userEmailDisplay) {
+            setTextContent(userEmailDisplay, currentUser ? currentUser.email : 'Not available');
+        }
+        if (userCreditsDisplay) {
+            setTextContent(userCreditsDisplay, currentUser ? `${currentUser.credits} credits` : '0 credits');
+        }
+        if (buyMoreCreditsButton) {
+            buyMoreCreditsButton.addEventListener('click', showBuyCredits);
+        }
+        
+        // Setup logo upload
+        const logoUpload = document.getElementById('logoUpload');
+        if (logoUpload) {
+            logoUpload.addEventListener('change', handleLogoUpload);
+        }
+    }, 100);
+}
+
+// Handle logo upload
+function handleLogoUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const logoPreview = document.getElementById('logoPreview');
+            if (logoPreview) {
+                logoPreview.innerHTML = `<img src="${e.target.result}" alt="Company Logo">`;
+                userSettings.companyLogo = e.target.result;
+                
+                // Update actions
+                const logoActions = logoPreview.nextElementSibling;
+                if (logoActions) {
+                    logoActions.innerHTML = `
+                        <button onclick="document.getElementById('logoUpload').click()" class="btn btn-secondary btn-sm">Change Image</button>
+                        <button onclick="removeLogo()" class="btn btn-outline btn-sm">Remove</button>
+                    `;
+                }
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// Remove logo
+function removeLogo() {
+    const logoPreview = document.getElementById('logoPreview');
+    if (logoPreview) {
+        logoPreview.innerHTML = '<div class="logo-placeholder">📷 Upload Logo</div>';
+        userSettings.companyLogo = null;
+        
+        // Update actions
+        const logoActions = logoPreview.nextElementSibling;
+        if (logoActions) {
+            logoActions.innerHTML = '<button onclick="document.getElementById(\'logoUpload\').click()" class="btn btn-secondary btn-sm">Choose Image</button>';
+        }
+    }
+}
+
+// Save settings
+function saveSettings() {
+    // Get form values
+    const companyName = document.getElementById('companyName')?.value || '';
+    const companyDescription = document.getElementById('companyDescription')?.value || '';
+    const services = document.getElementById('services')?.value || '';
+    const contactPerson = document.getElementById('contactPerson')?.value || '';
+    const emailSignature = document.getElementById('emailSignature')?.value || '';
+    
+    // Update settings object
+    userSettings = {
+        ...userSettings,
+        companyName,
+        companyDescription,
+        services,
+        contactPerson,
+        emailSignature
+    };
+    
+    // Save to localStorage
+    localStorage.setItem('userSettings', JSON.stringify(userSettings));
+    
+    // Show success message
+    showNotification('Settings saved successfully!', 'success');
+}
+
+// Reset settings
+function resetSettings() {
+    if (confirm('Are you sure you want to reset all settings to defaults?')) {
+        userSettings = {
+            companyName: '',
+            companyDescription: '',
+            services: '',
+            contactPerson: '',
+            emailSignature: '',
+            companyLogo: null
+        };
+        
+        localStorage.removeItem('userSettings');
+        showSettingsSection(); // Refresh the page
+        showNotification('Settings reset to defaults', 'info');
+    }
+}
+
+// Show notification
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <span>${escapeHtml(message)}</span>
+            <button onclick="this.parentElement.parentElement.remove()">✕</button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
 }
 
 // Go to search page (helper function)
@@ -852,6 +1080,9 @@ async function generatePersonalizedEmail(business) {
     showEmailModal(business, null, true);
     
     try {
+        // Load user settings
+        const savedSettings = JSON.parse(localStorage.getItem('userSettings') || '{}');
+        
         const response = await fetch('/api/generate-email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -863,8 +1094,10 @@ async function generatePersonalizedEmail(business) {
                     website: business.website,
                     phone: business.phone
                 },
-                userCompany: localStorage.getItem('userCompany') || '',
-                userProduct: localStorage.getItem('userProduct') || ''
+                userCompany: savedSettings.companyName || localStorage.getItem('userCompany') || '',
+                userProduct: savedSettings.services || localStorage.getItem('userProduct') || '',
+                companyDescription: savedSettings.companyDescription || '',
+                contactPerson: savedSettings.contactPerson || ''
             })
         });
         
@@ -874,6 +1107,13 @@ async function generatePersonalizedEmail(business) {
         }
         
         const emailData = await response.json();
+        
+        // Add signature if available
+        const savedSettings = JSON.parse(localStorage.getItem('userSettings') || '{}');
+        if (savedSettings.emailSignature) {
+            emailData.body = emailData.body + '\n\n' + savedSettings.emailSignature;
+        }
+        
         showEmailModal(business, emailData, false);
         
     } catch (error) {
@@ -938,7 +1178,7 @@ function showEmailModal(business, emailData, isLoading) {
                             </svg>
                             Copy to Clipboard
                         </button>
-                        <a href="mailto:${business.email}?subject=${encodeURIComponent(emailData.subject)}&body=${encodeURIComponent(emailData.body)}" class="btn btn-primary">
+                        <button onclick="openInEmailClient('${escapeHtml(JSON.stringify(business))}', '${escapeHtml(emailData.subject)}', \`${escapeHtml(emailData.body)}\`)" class="btn btn-primary">
                             <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
                                 <path d="M3 8L10.89 13.26C11.2187 13.4793 11.6049 13.5963 12 13.5963C12.3951 13.5963 12.7813 13.4793 13.11 13.26L21 8M5 19H19C19.5304 19 20.0391 18.7893 20.4142 18.4142C20.7893 18.0391 21 17.5304 21 17V7C21 6.46957 20.7893 5.96086 20.4142 5.58579C20.0391 5.21071 19.5304 5 19 5H5C4.46957 5 3.96086 5.21071 3.58579 5.58579C3.21071 5.96086 3 6.46957 3 7V17C3 17.5304 3.21071 18.0391 3.58579 18.4142C3.96086 18.7893 4.46957 19 5 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
@@ -997,6 +1237,91 @@ async function copyEmail() {
     } catch (err) {
         console.error('Failed to copy:', err);
         alert('Failed to copy to clipboard');
+    }
+}
+
+// Open in email client and save to history
+function openInEmailClient(businessJson, subject, body) {
+    const business = JSON.parse(businessJson);
+    
+    // Save email to sent history
+    const emailRecord = {
+        id: Date.now().toString(),
+        businessName: business.name,
+        businessEmail: business.email,
+        subject: subject,
+        body: body,
+        sentAt: new Date().toLocaleString()
+    };
+    
+    // Get existing sent emails
+    const sentEmails = JSON.parse(localStorage.getItem('sentEmails') || '[]');
+    sentEmails.unshift(emailRecord); // Add to beginning
+    
+    // Keep only last 50 emails
+    if (sentEmails.length > 50) {
+        sentEmails.splice(50);
+    }
+    
+    // Save back to localStorage
+    localStorage.setItem('sentEmails', JSON.stringify(sentEmails));
+    
+    // Open email client
+    const emailUrl = `mailto:${business.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = emailUrl;
+    
+    // Show success notification
+    showNotification(`Email saved to history and opened in your email client!`, 'success');
+    
+    // Close modal after a short delay
+    setTimeout(() => {
+        closeEmailModal();
+    }, 1000);
+}
+
+// View full email from history
+function viewFullEmail(emailId) {
+    const sentEmails = JSON.parse(localStorage.getItem('sentEmails') || '[]');
+    const email = sentEmails.find(e => e.id === emailId);
+    
+    if (email) {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content email-modal">
+                <div class="modal-header">
+                    <h2>Email Details</h2>
+                    <button class="modal-close" onclick="this.closest('.modal').remove()">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="email-details">
+                        <div class="form-group">
+                            <label class="form-label">To</label>
+                            <div class="form-display">${escapeHtml(email.businessName)} (${escapeHtml(email.businessEmail)})</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Subject</label>
+                            <div class="form-display">${escapeHtml(email.subject)}</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Sent</label>
+                            <div class="form-display">${email.sentAt}</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Content</label>
+                            <div class="email-content">${escapeHtml(email.body).replace(/\n/g, '<br>')}</div>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <a href="mailto:${email.businessEmail}?subject=${encodeURIComponent(email.subject)}&body=${encodeURIComponent(email.body)}" class="btn btn-primary">Send Again</a>
+                        <button onclick="this.closest('.modal').remove()" class="btn btn-secondary">Close</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        modal.style.display = 'flex';
     }
 }
 

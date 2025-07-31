@@ -353,7 +353,7 @@ app.post('/api/payments/complete-purchase', requireAuth, async (req, res) => {
 // Generate personalized email
 app.post('/api/generate-email', requireAuth, async (req, res) => {
   try {
-    const { businessName, businessInfo, userCompany, userProduct } = req.body;
+    const { businessName, businessInfo, userCompany, userProduct, companyDescription, contactPerson } = req.body;
     
     if (!businessName || !businessInfo) {
       return res.status(400).json({ error: 'Business information required' });
@@ -368,22 +368,29 @@ app.post('/api/generate-email', requireAuth, async (req, res) => {
     // Create prompt for GPT
     const prompt = `Generate a professional, personalized cold email for the following business:
 
-Business Name: ${businessName}
-Business Type: ${businessInfo.type || 'Business'}
-Location: ${businessInfo.address || 'Not specified'}
-Website: ${businessInfo.website || 'Not specified'}
+Business Information:
+- Name: ${businessName}
+- Type: ${businessInfo.type || 'Business'}
+- Location: ${businessInfo.address || 'Not specified'}
+- Website: ${businessInfo.website || 'Not specified'}
+- Phone: ${businessInfo.phone || 'Not specified'}
 
-User's Company: ${userCompany || 'Our company'}
-User's Product/Service: ${userProduct || 'our services'}
+Sender Information:
+- Company: ${userCompany || 'Our company'}
+- Services/Products: ${userProduct || 'our services'}
+- Company Description: ${companyDescription || 'Not specified'}
+- Contact Person: ${contactPerson || 'Sales Team'}
 
 Write a short, personalized email (max 150 words) that:
-1. Shows you've researched their business
-2. Identifies a specific problem they might have
-3. Briefly explains how your product/service can help
-4. Includes a clear call-to-action
+1. Shows you've researched their business specifically
+2. Identifies a relevant problem or opportunity for their industry/location
+3. Briefly explains how the sender's services can provide value
+4. Includes a clear, non-pushy call-to-action
 5. Uses a friendly, professional tone
+6. Mentions specific details about their business when possible
 
-The email should be in the same language as the business location (Dutch for Netherlands addresses, English otherwise).`;
+The email should be in the same language as the business location (Dutch for Netherlands addresses, English otherwise).
+Do not include "Subject:" in your response - just the email body.`;
 
     // Call OpenAI API
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -418,11 +425,19 @@ The email should be in the same language as the business location (Dutch for Net
     const data = await response.json();
     const emailContent = data.choices[0].message.content;
     
-    // Extract subject line if GPT included one, otherwise generate
-    let subject = `Introducing ${userProduct || 'our services'} to ${businessName}`;
-    const subjectMatch = emailContent.match(/Subject:\s*(.+?)(?:\n|$)/i);
-    if (subjectMatch) {
-      subject = subjectMatch[1];
+    // Generate a personalized subject line
+    let subject = `Partnership opportunity for ${businessName}`;
+    if (userCompany && userProduct) {
+      // Create more specific subject based on services
+      if (userProduct.toLowerCase().includes('web') || userProduct.toLowerCase().includes('website')) {
+        subject = `Improve ${businessName}'s online presence`;
+      } else if (userProduct.toLowerCase().includes('marketing')) {
+        subject = `Grow ${businessName} with targeted marketing`;
+      } else if (userProduct.toLowerCase().includes('consult')) {
+        subject = `Strategic consultation for ${businessName}`;
+      } else {
+        subject = `${userProduct} solutions for ${businessName}`;
+      }
     }
     
     res.json({
