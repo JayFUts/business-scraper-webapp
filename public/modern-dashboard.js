@@ -817,7 +817,25 @@ function goToSearch() {
 async function checkAuth() {
     console.log('Checking authentication...');
     try {
-        const response = await fetch('/api/auth/me');
+        // Get token from localStorage
+        const token = localStorage.getItem('authToken');
+        console.log('Token found:', token ? 'YES' : 'NO');
+        
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        // Add Authorization header if token exists
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        const response = await fetch('/api/auth/me', {
+            method: 'GET',
+            headers: headers,
+            credentials: 'include' // Include cookies for session auth
+        });
+        
         console.log('Auth response status:', response.status);
         if (response.ok) {
             const data = await response.json();
@@ -826,10 +844,14 @@ async function checkAuth() {
             showDashboard();
         } else {
             console.log('User not authenticated, showing auth form');
+            // Clear invalid token
+            localStorage.removeItem('authToken');
             showAuth();
         }
     } catch (error) {
         console.error('Auth check failed:', error);
+        // Clear invalid token
+        localStorage.removeItem('authToken');
         showAuth();
     }
 }
@@ -916,6 +938,7 @@ async function handleLogin(e) {
         const response = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({ email, password })
         });
         
@@ -923,6 +946,10 @@ async function handleLogin(e) {
         
         if (response.ok) {
             currentUser = data.user;
+            // Store token for future requests
+            if (data.token) {
+                localStorage.setItem('authToken', data.token);
+            }
             showDashboard();
             loginForm.reset();
             errorDiv.textContent = '';
