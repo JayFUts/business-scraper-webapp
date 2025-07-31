@@ -56,9 +56,23 @@ app.use(session({
 // CORS and JSON middleware
 app.use(cors({
   credentials: true,
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://app.leadfinders.nl', 'https://business-scraper-webapp-production-1bdd.up.railway.app']
-    : 'http://localhost:3000'
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'https://app.leadfinders.nl',
+      'https://business-scraper-webapp-production-1bdd.up.railway.app',
+      'http://localhost:3000'
+    ];
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      return callback(new Error('CORS policy violation'), false);
+    }
+  }
 }));
 app.use(express.json());
 

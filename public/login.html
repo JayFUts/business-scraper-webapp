@@ -318,15 +318,21 @@
             
             try {
                 console.log('Making login request...');
+                console.log('Request URL:', window.location.origin + '/api/auth/login');
+                console.log('Email:', email);
+                console.log('Password length:', password.length);
+                
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
+                    credentials: 'include',
                     body: JSON.stringify({ email, password }),
                 });
                 
                 console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
                 const data = await response.json();
                 console.log('Response data:', data);
                 
