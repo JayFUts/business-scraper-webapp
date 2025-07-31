@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign In - LeadFinders</title>
+    <title>Register - LeadFinders</title>
     <link rel="stylesheet" href="modern-styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -109,20 +109,20 @@
             margin-bottom: var(--space-sm);
         }
 
-        .btn-login {
+        .btn-register {
             background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
             color: white;
             position: relative;
             overflow: hidden;
         }
 
-        .btn-login:hover {
+        .btn-register:hover {
             transform: translateY(-1px);
             box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
             background: linear-gradient(135deg, #5558e8 0%, #7c4ee0 100%);
         }
 
-        .btn-login:active {
+        .btn-register:active {
             transform: translateY(0);
         }
 
@@ -219,11 +219,11 @@
                         </linearGradient>
                     </defs>
                 </svg>
-                <h1 class="auth-title">Welcome back</h1>
-                <p class="auth-subtitle">Sign in to your LeadFinders account</p>
+                <h1 class="auth-title">Create account</h1>
+                <p class="auth-subtitle">Join LeadFinders and start finding leads</p>
             </div>
 
-            <form id="loginForm">
+            <form id="registerForm">
                 <div class="form-group">
                     <label class="form-label" for="email">Email</label>
                     <input type="email" id="email" name="email" class="form-input" placeholder="you@example.com" required>
@@ -234,13 +234,16 @@
                     <label class="form-label" for="password">Password</label>
                     <input type="password" id="password" name="password" class="form-input" placeholder="••••••••" required>
                     <div class="error-message" id="passwordError"></div>
+                    <small style="color: var(--text-tertiary); font-size: var(--text-sm);">
+                        Minimum 8 characters with uppercase, lowercase, numbers, and symbols
+                    </small>
                 </div>
 
                 <div class="error-message" id="generalError" style="margin-bottom: var(--space-md);"></div>
 
                 <div class="auth-actions">
-                    <button type="submit" class="btn-auth btn-login" id="loginButton">
-                        Sign In
+                    <button type="submit" class="btn-auth btn-register" id="registerButton">
+                        Create Account
                     </button>
                 </div>
             </form>
@@ -248,7 +251,7 @@
             <div class="auth-divider">or</div>
 
             <div class="auth-link">
-                Don't have an account? <a href="/register">Create one</a>
+                Already have an account? <a href="/login">Sign in</a>
             </div>
 
             <div class="auth-link" style="margin-top: var(--space-sm);">
@@ -258,15 +261,12 @@
     </div>
 
     <script>
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            console.log('Login form submitted');
             
-            const button = document.getElementById('loginButton');
+            const button = document.getElementById('registerButton');
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            
-            console.log('Email:', email, 'Password length:', password.length);
             
             // Clear previous errors
             document.querySelectorAll('.error-message').forEach(el => {
@@ -289,11 +289,10 @@
             
             // Show loading state
             button.classList.add('loading');
-            button.innerHTML = 'Signing in<span class="spinner"></span>';
+            button.innerHTML = 'Creating account<span class="spinner"></span>';
             
             try {
-                console.log('Making login request...');
-                const response = await fetch('/api/auth/login', {
+                const response = await fetch('/api/auth/register', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -301,33 +300,29 @@
                     body: JSON.stringify({ email, password }),
                 });
                 
-                console.log('Response status:', response.status);
                 const data = await response.json();
-                console.log('Response data:', data);
                 
                 if (response.ok) {
-                    console.log('Login successful, redirecting...');
                     // Store token and redirect to dashboard
                     localStorage.setItem('authToken', data.token);
                     window.location.href = '/dashboard';
                 } else {
-                    console.log('Login failed:', data.error);
                     // Show error
-                    document.getElementById('generalError').textContent = data.error || 'Invalid email or password';
+                    document.getElementById('generalError').textContent = data.error || 'Registration failed';
                     document.getElementById('generalError').style.display = 'block';
                     
                     // Reset button
                     button.classList.remove('loading');
-                    button.innerHTML = 'Sign In';
+                    button.innerHTML = 'Create Account';
                 }
             } catch (error) {
-                console.error('Login error:', error);
+                console.error('Register error:', error);
                 document.getElementById('generalError').textContent = 'Connection error. Please try again.';
                 document.getElementById('generalError').style.display = 'block';
                 
                 // Reset button
                 button.classList.remove('loading');
-                button.innerHTML = 'Sign In';
+                button.innerHTML = 'Create Account';
             }
         });
     </script>
