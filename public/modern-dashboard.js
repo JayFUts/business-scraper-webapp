@@ -448,29 +448,64 @@ function showHistorySection() {
     
     const mainContent = document.querySelector('.search-container');
     if (mainContent) {
-        mainContent.innerHTML = `
-            <div class="search-header">
-                <h1 class="page-title">Search History</h1>
-                <p class="page-subtitle">View your previous searches and results</p>
-            </div>
-            <div class="history-content">
-                <div class="history-card">
-                    <div class="history-icon">
-                        <svg viewBox="0 0 24 24" fill="none" style="width: 48px; height: 48px; color: var(--gray-400);">
-                            <path d="M12 8V12M12 16H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                    <h2 style="color: var(--gray-700); margin-bottom: var(--space-sm);">No Search History Yet</h2>
-                    <p style="color: var(--gray-600); margin-bottom: var(--space-lg);">Your search history will appear here after you perform your first search.</p>
-                    <button onclick="goToSearch()" class="btn btn-primary">
-                        <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
-                            <path d="M17 17L13 13M15 9C15 12.3137 12.3137 15 9 15C5.68629 15 3 12.3137 3 9C3 5.68629 5.68629 3 9 3C12.3137 3 15 5.68629 15 9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                        Start Your First Search
-                    </button>
+        if (searchHistory.length === 0) {
+            mainContent.innerHTML = `
+                <div class="search-header">
+                    <h1 class="page-title">Search History</h1>
+                    <p class="page-subtitle">View your previous searches and results</p>
                 </div>
-            </div>
-        `;
+                <div class="history-content">
+                    <div class="history-card">
+                        <div class="history-icon">
+                            <svg viewBox="0 0 24 24" fill="none" style="width: 48px; height: 48px; color: var(--gray-400);">
+                                <path d="M12 8V12M12 16H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <h2 style="color: var(--gray-700); margin-bottom: var(--space-sm);">No Search History Yet</h2>
+                        <p style="color: var(--gray-600); margin-bottom: var(--space-lg);">Your search history will appear here after you perform your first search.</p>
+                        <button onclick="goToSearch()" class="btn btn-primary">
+                            <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                                <path d="M17 17L13 13M15 9C15 12.3137 12.3137 15 9 15C5.68629 15 3 12.3137 3 9C3 5.68629 5.68629 3 9 3C12.3137 3 15 5.68629 15 9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Start Your First Search
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else {
+            // Display actual search history
+            let historyHTML = `
+                <div class="search-header">
+                    <h1 class="page-title">Search History</h1>
+                    <p class="page-subtitle">View your previous searches and results</p>
+                </div>
+                <div class="history-content">
+            `;
+            
+            searchHistory.forEach((search, index) => {
+                const searchDate = new Date(search.timestamp).toLocaleDateString();
+                const searchTime = new Date(search.timestamp).toLocaleTimeString();
+                
+                historyHTML += `
+                    <div class="history-item">
+                        <div class="history-item-header">
+                            <h3>${escapeHtml(search.query)}</h3>
+                            <span class="history-date">${searchDate} • ${searchTime}</span>
+                        </div>
+                        <div class="history-item-meta">
+                            <span class="business-count">${search.count || search.results?.length || 0} businesses found</span>
+                            <div class="history-actions">
+                                <button onclick="viewSearchResults(${index})" class="btn btn-secondary btn-sm">View Results</button>
+                                <button onclick="exportSearchResults(${index}, 'csv')" class="btn btn-outline btn-sm">Export CSV</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            historyHTML += '</div>';
+            mainContent.innerHTML = historyHTML;
+        }
         mainContent.style.display = 'block';
     }
 }
@@ -535,8 +570,8 @@ function showResultsSection() {
                 const meta = document.createElement('div');
                 meta.className = 'result-meta';
                 
-                const count = createSafeElement('span', `${search.resultCount} businesses`, { class: 'result-count' });
-                const date = createSafeElement('span', search.completedAt, { class: 'result-date' });
+                const count = createSafeElement('span', `${search.count || search.results?.length || 0} businesses`, { class: 'result-count' });
+                const date = createSafeElement('span', new Date(search.timestamp).toLocaleString(), { class: 'result-date' });
                 meta.appendChild(count);
                 meta.appendChild(date);
                 info.appendChild(meta);
@@ -1124,6 +1159,40 @@ function goToSearch() {
     const searchNavItem = document.querySelector('.nav-item[href="#"]:first-of-type'); // First nav item is Search
     if (searchNavItem) {
         handleNavigation('Search', searchNavItem);
+    }
+}
+
+// View search results from history
+function viewSearchResults(index) {
+    if (searchHistory[index] && searchHistory[index].results) {
+        // Store current results for viewing
+        currentSearchResults = searchHistory[index].results;
+        currentSearchQuery = searchHistory[index].query;
+        
+        // Switch to results tab and display
+        const resultsNavItem = document.querySelector('.nav-item:nth-child(3)'); // Results tab
+        if (resultsNavItem) {
+            handleNavigation('Results', resultsNavItem);
+        }
+        
+        // Display the specific results
+        setTimeout(() => {
+            displaySearchResults(searchHistory[index].results, searchHistory[index].query);
+        }, 100);
+    }
+}
+
+// Export search results from history
+function exportSearchResults(index, format) {
+    if (searchHistory[index] && searchHistory[index].results) {
+        const results = searchHistory[index].results;
+        const query = searchHistory[index].query;
+        
+        if (format === 'csv') {
+            exportToCSV(results, query);
+        } else if (format === 'json') {
+            exportToJSON(results, query);
+        }
     }
 }
 
