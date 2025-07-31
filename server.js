@@ -527,7 +527,7 @@ app.post('/api/email/send', requireAuth, async (req, res) => {
       subject,
       body,
       html,
-      fromName: emailConfig.companyName || currentUser.email
+      fromName: emailConfig.companyName || req.user.email
     });
     
     if (result.success) {

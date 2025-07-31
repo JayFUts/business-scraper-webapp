@@ -659,6 +659,187 @@ function showSettingsSection() {
                     </div>
                 </div>
                 
+                <!-- Connect Email Account -->
+                <div class="settings-section">
+                    <h2 class="settings-title">
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none">
+                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Connect Your Email
+                    </h2>
+                    <div class="settings-card email-connect-card">
+                        <div class="email-provider-tabs">
+                            <button class="provider-tab active" onclick="showEmailProvider('gmail')">
+                                <img src="https://www.google.com/gmail/about/static-2.0/images/logo-gmail.png" alt="Gmail" class="provider-logo">
+                                Gmail
+                            </button>
+                            <button class="provider-tab" onclick="showEmailProvider('outlook')">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/d/df/Microsoft_Office_Outlook_%282018%E2%80%93present%29.svg" alt="Outlook" class="provider-logo">
+                                Outlook
+                            </button>
+                            <button class="provider-tab" onclick="showEmailProvider('custom')">
+                                <svg class="provider-logo" viewBox="0 0 24 24" fill="none">
+                                    <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                Custom SMTP
+                            </button>
+                        </div>
+                        
+                        <div id="emailProviderContent">
+                            <!-- Gmail Instructions (default) -->
+                            <div id="gmail-setup" class="provider-setup">
+                                <div class="setup-instructions">
+                                    <h3>📧 Connect Your Gmail Account</h3>
+                                    <p>To send emails directly from LeadFinders, you need to create an app-specific password:</p>
+                                    
+                                    <div class="instruction-steps">
+                                        <div class="step">
+                                            <span class="step-number">1</span>
+                                            <div class="step-content">
+                                                <p><strong>Enable 2-Factor Authentication</strong></p>
+                                                <p>First, make sure 2FA is enabled on your Google account</p>
+                                                <a href="https://myaccount.google.com/security" target="_blank" class="btn btn-secondary btn-sm">
+                                                    Go to Security Settings →
+                                                </a>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="step">
+                                            <span class="step-number">2</span>
+                                            <div class="step-content">
+                                                <p><strong>Create App Password</strong></p>
+                                                <p>Generate a special password for LeadFinders</p>
+                                                <a href="https://myaccount.google.com/apppasswords" target="_blank" class="btn btn-primary btn-sm">
+                                                    Create App Password →
+                                                </a>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="step">
+                                            <span class="step-number">3</span>
+                                            <div class="step-content">
+                                                <p><strong>Configure Below</strong></p>
+                                                <p>Enter your email and the 16-character app password</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="email-config-form">
+                                    <div class="form-group">
+                                        <label class="form-label">Gmail Address</label>
+                                        <input type="email" id="gmail-email" class="form-input" placeholder="your@gmail.com">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">App Password</label>
+                                        <input type="password" id="gmail-password" class="form-input" placeholder="xxxx xxxx xxxx xxxx">
+                                        <small>16-character password from Google (not your regular password)</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Outlook Instructions -->
+                            <div id="outlook-setup" class="provider-setup" style="display: none;">
+                                <div class="setup-instructions">
+                                    <h3>📮 Connect Your Outlook Account</h3>
+                                    <p>To send emails directly from LeadFinders via Outlook, follow these steps:</p>
+                                    
+                                    <div class="instruction-steps">
+                                        <div class="step">
+                                            <span class="step-number">1</span>
+                                            <div class="step-content">
+                                                <p><strong>Go to Security Settings</strong></p>
+                                                <p>Access your Microsoft account security page</p>
+                                                <a href="https://account.microsoft.com/security" target="_blank" class="btn btn-secondary btn-sm">
+                                                    Microsoft Security →
+                                                </a>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="step">
+                                            <span class="step-number">2</span>
+                                            <div class="step-content">
+                                                <p><strong>Create App Password</strong></p>
+                                                <p>Under "Advanced security" → "App passwords"</p>
+                                                <a href="https://account.live.com/proofs/AppPassword" target="_blank" class="btn btn-primary btn-sm">
+                                                    Create App Password →
+                                                </a>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="step">
+                                            <span class="step-number">3</span>
+                                            <div class="step-content">
+                                                <p><strong>Configure Below</strong></p>
+                                                <p>Enter your email and the generated app password</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="email-config-form">
+                                    <div class="form-group">
+                                        <label class="form-label">Outlook Email</label>
+                                        <input type="email" id="outlook-email" class="form-input" placeholder="your@outlook.com">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">App Password</label>
+                                        <input type="password" id="outlook-password" class="form-input" placeholder="Generated app password">
+                                        <small>App password from Microsoft (not your regular password)</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Custom SMTP -->
+                            <div id="custom-setup" class="provider-setup" style="display: none;">
+                                <div class="setup-instructions">
+                                    <h3>⚙️ Custom SMTP Configuration</h3>
+                                    <p>Configure your own SMTP server for sending emails:</p>
+                                </div>
+                                
+                                <div class="email-config-form">
+                                    <div class="form-group">
+                                        <label class="form-label">SMTP Host</label>
+                                        <input type="text" id="custom-host" class="form-input" placeholder="smtp.example.com">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">SMTP Port</label>
+                                        <input type="number" id="custom-port" class="form-input" placeholder="587" value="587">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Email Address</label>
+                                        <input type="email" id="custom-email" class="form-input" placeholder="your@domain.com">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Password</label>
+                                        <input type="password" id="custom-password" class="form-input" placeholder="Your email password">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="email-config-actions">
+                            <button onclick="testEmailConfiguration()" class="btn btn-secondary">
+                                <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                                    <path d="M10 18a8 8 0 100-16 8 8 0 000 16z" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M10 6v4l2 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                                Test Connection
+                            </button>
+                            <button onclick="saveEmailConfiguration()" class="btn btn-primary">
+                                <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                                    <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                Save Configuration
+                            </button>
+                        </div>
+                        
+                        <div id="emailConfigStatus" class="config-status"></div>
+                    </div>
+                </div>
+                
                 <!-- Save Button -->
                 <div class="settings-actions">
                     <button onclick="saveSettings()" class="btn btn-primary btn-large">Save Settings</button>
@@ -1204,12 +1385,12 @@ function showEmailModal(business, emailData, isLoading) {
                             </svg>
                             Copy to Clipboard
                         </button>
-                        <button onclick="openInEmailClient('${escapeHtml(JSON.stringify(business))}', '${escapeHtml(emailData.subject)}', \`${escapeHtml(emailData.body)}\`)" class="btn btn-primary">
+                        <button onclick="sendEmailDirectly(${escapeHtml(JSON.stringify(business))}, '${escapeHtml(emailData.subject)}', \`${escapeHtml(emailData.body)}\`)" class="btn btn-success">
                             <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
-                                <path d="M3 8L10.89 13.26C11.2187 13.4793 11.6049 13.5963 12 13.5963C12.3951 13.5963 12.7813 13.4793 13.11 13.26L21 8M5 19H19C19.5304 19 20.0391 18.7893 20.4142 18.4142C20.7893 18.0391 21 17.5304 21 17V7C21 6.46957 20.7893 5.96086 20.4142 5.58579C20.0391 5.21071 19.5304 5 19 5H5C4.46957 5 3.96086 5.21071 3.58579 5.58579C3.21071 5.96086 3 6.46957 3 7V17C3 17.5304 3.21071 18.0391 3.58579 18.4142C3.96086 18.7893 4.46957 19 5 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" stroke="currentColor" stroke-width="2"/>
                             </svg>
-                            Open in Email Client
-                        </a>
+                            Send Email
+                        </button>
                     </div>
                 `}
             </div>
@@ -2011,3 +2192,176 @@ slideStyle.textContent = `
     }
 `;
 document.head.appendChild(slideStyle);
+
+// Email configuration functions
+let currentEmailProvider = 'gmail';
+let emailConfig = JSON.parse(localStorage.getItem('emailConfig') || '{}');
+
+// Show email provider setup
+function showEmailProvider(provider) {
+    // Update tabs
+    document.querySelectorAll('.provider-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    event.target.closest('.provider-tab').classList.add('active');
+    
+    // Hide all setups
+    document.querySelectorAll('.provider-setup').forEach(setup => {
+        setup.style.display = 'none';
+    });
+    
+    // Show selected setup
+    document.getElementById(`${provider}-setup`).style.display = 'block';
+    currentEmailProvider = provider;
+    
+    // Load saved config if exists
+    if (emailConfig[provider]) {
+        const config = emailConfig[provider];
+        if (provider === 'gmail') {
+            document.getElementById('gmail-email').value = config.email || '';
+            document.getElementById('gmail-password').value = config.password || '';
+        } else if (provider === 'outlook') {
+            document.getElementById('outlook-email').value = config.email || '';
+            document.getElementById('outlook-password').value = config.password || '';
+        } else if (provider === 'custom') {
+            document.getElementById('custom-host').value = config.host || '';
+            document.getElementById('custom-port').value = config.port || '587';
+            document.getElementById('custom-email').value = config.email || '';
+            document.getElementById('custom-password').value = config.password || '';
+        }
+    }
+}
+
+// Test email configuration
+async function testEmailConfiguration() {
+    const statusDiv = document.getElementById('emailConfigStatus');
+    statusDiv.innerHTML = '<div class="status-loading">🔄 Testing connection...</div>';
+    
+    let config = {};
+    
+    if (currentEmailProvider === 'gmail') {
+        config = {
+            provider: 'gmail',
+            email: document.getElementById('gmail-email').value,
+            password: document.getElementById('gmail-password').value
+        };
+    } else if (currentEmailProvider === 'outlook') {
+        config = {
+            provider: 'outlook',
+            email: document.getElementById('outlook-email').value,
+            password: document.getElementById('outlook-password').value
+        };
+    } else if (currentEmailProvider === 'custom') {
+        config = {
+            provider: 'custom',
+            email: document.getElementById('custom-email').value,
+            password: document.getElementById('custom-password').value,
+            customHost: document.getElementById('custom-host').value,
+            customPort: document.getElementById('custom-port').value
+        };
+    }
+    
+    try {
+        const response = await fetch('/api/email/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            statusDiv.innerHTML = '<div class="status-success">✅ Connection successful! Email configuration is working.</div>';
+        } else {
+            statusDiv.innerHTML = `<div class="status-error">❌ Connection failed: ${escapeHtml(result.error)}<br><small>${escapeHtml(result.hint || '')}</small></div>`;
+        }
+    } catch (error) {
+        statusDiv.innerHTML = '<div class="status-error">❌ Test failed: ' + escapeHtml(error.message) + '</div>';
+    }
+}
+
+// Save email configuration
+function saveEmailConfiguration() {
+    const statusDiv = document.getElementById('emailConfigStatus');
+    
+    let config = {};
+    
+    if (currentEmailProvider === 'gmail') {
+        config = {
+            email: document.getElementById('gmail-email').value,
+            password: document.getElementById('gmail-password').value
+        };
+    } else if (currentEmailProvider === 'outlook') {
+        config = {
+            email: document.getElementById('outlook-email').value,
+            password: document.getElementById('outlook-password').value
+        };
+    } else if (currentEmailProvider === 'custom') {
+        config = {
+            email: document.getElementById('custom-email').value,
+            password: document.getElementById('custom-password').value,
+            host: document.getElementById('custom-host').value,
+            port: document.getElementById('custom-port').value
+        };
+    }
+    
+    // Save to localStorage
+    emailConfig[currentEmailProvider] = config;
+    emailConfig.activeProvider = currentEmailProvider;
+    localStorage.setItem('emailConfig', JSON.stringify(emailConfig));
+    
+    statusDiv.innerHTML = '<div class="status-success">✅ Email configuration saved!</div>';
+    
+    setTimeout(() => {
+        statusDiv.innerHTML = '';
+    }, 3000);
+}
+
+// Send email directly
+async function sendEmailDirectly(business, subject, body) {
+    const config = emailConfig[emailConfig.activeProvider];
+    
+    if (!config || !config.email || !config.password) {
+        alert('Please configure your email settings first in the Settings page.');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/email/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                to: business.email,
+                subject: subject,
+                body: body,
+                emailConfig: {
+                    provider: emailConfig.activeProvider,
+                    ...config,
+                    companyName: userSettings.companyName || ''
+                }
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Add to sent emails
+            sentEmails.push({
+                recipient: business.email,
+                businessName: business.name,
+                subject: subject,
+                body: body,
+                sentAt: new Date().toISOString()
+            });
+            localStorage.setItem('sentEmails', JSON.stringify(sentEmails));
+            
+            // Show success
+            showNotification(`Email sent successfully to ${business.name}!`, 'success');
+            closeEmailModal();
+        } else {
+            alert('Failed to send email: ' + result.error);
+        }
+    } catch (error) {
+        alert('Error sending email: ' + error.message);
+    }
+}
