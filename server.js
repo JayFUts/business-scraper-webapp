@@ -771,8 +771,8 @@ async function scrapeBusinesses(searchQuery, sessionId) {
     const businessesToProcess = businesses.slice(0, 50);
     const detailedResults = [];
     
-    // Create multiple pages for parallel processing
-    const numConcurrentTabs = 3;
+    // Create multiple pages for parallel processing (reduced from 3 to 2 for better reliability)
+    const numConcurrentTabs = 2;
     const pages = [];
     
     try {
@@ -794,7 +794,8 @@ async function scrapeBusinesses(searchQuery, sessionId) {
         // Process chunk in parallel
         const chunkPromises = chunk.map((business, index) => {
           const pageIndex = index % pages.length;
-          return processBusinessInPage(pages[pageIndex], business, sessionId);
+          const globalBusinessIndex = processedCount + index; // Global index for progressive delays
+          return processBusinessInPage(pages[pageIndex], business, sessionId, globalBusinessIndex);
         });
         
         const chunkResults = await Promise.all(chunkPromises);
@@ -865,13 +866,17 @@ async function handleConsentIfNeeded(page) {
 }
 
 // Helper function to process a single business in parallel
-async function processBusinessInPage(page, business, sessionId) {
+async function processBusinessInPage(page, business, sessionId, businessIndex = 0) {
   try {
     await page.goto(business.url, { 
       waitUntil: 'domcontentloaded',
       timeout: 15000 
     });
-    await page.waitForTimeout(1500); // Slightly increased for better data loading
+    
+    // Progressive delay - longer waits for later businesses to avoid rate limiting
+    const baseDelay = 1500;
+    const additionalDelay = Math.min(businessIndex * 50, 1000); // Max 1 extra second
+    await page.waitForTimeout(baseDelay + additionalDelay);
     
     // Handle consent if needed
     await handleConsentIfNeeded(page);
