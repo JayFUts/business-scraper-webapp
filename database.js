@@ -64,6 +64,20 @@ function initDatabase() {
         FOREIGN KEY (user_id) REFERENCES users (id)
       )
     `);
+    
+    // Search results table for persistent storage
+    db.run(`
+      CREATE TABLE IF NOT EXISTS search_results (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        session_id TEXT NOT NULL,
+        search_query TEXT NOT NULL,
+        results_data TEXT NOT NULL,
+        results_count INTEGER,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id)
+      )
+    `);
 
     console.log('✅ Database tables initialized');
   });
@@ -280,9 +294,90 @@ const usageFunctions = {
 // Initialize database on startup
 initDatabase();
 
+// Sent emails functions
+const emailFunctions = {
+  // Record sent email
+  recordSentEmail: async (userId, recipientEmail, businessName, subject, body) => {
+    return new Promise((resolve, reject) => {
+      db.run(
+        'INSERT INTO sent_emails (user_id, recipient_email, business_name, subject, body) VALUES (?, ?, ?, ?, ?)',
+        [userId, recipientEmail, businessName, subject, body],
+        function(err) {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(this.lastID);
+          }
+        }
+      );
+    });
+  },
+
+  // Get sent emails for user
+  getSentEmails: async (userId, limit = 50) => {
+    return new Promise((resolve, reject) => {
+      db.all(
+        'SELECT * FROM sent_emails WHERE user_id = ? ORDER BY sent_at DESC LIMIT ?',
+        [userId, limit],
+        (err, rows) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(rows);
+          }
+        }
+      );
+    });
+  }
+};
+
+// Search results functions
+const searchResultsFunctions = {
+  // Save search results
+  saveSearchResults: async (userId, sessionId, searchQuery, resultsData, resultsCount) => {
+    return new Promise((resolve, reject) => {
+      db.run(
+        'INSERT INTO search_results (user_id, session_id, search_query, results_data, results_count) VALUES (?, ?, ?, ?, ?)',
+        [userId, sessionId, searchQuery, JSON.stringify(resultsData), resultsCount],
+        function(err) {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(this.lastID);
+          }
+        }
+      );
+    });
+  },
+
+  // Get search results for user
+  getSearchResults: async (userId, limit = 20) => {
+    return new Promise((resolve, reject) => {
+      db.all(
+        'SELECT * FROM search_results WHERE user_id = ? ORDER BY created_at DESC LIMIT ?',
+        [userId, limit],
+        (err, rows) => {
+          if (err) {
+            reject(err);
+          } else {
+            // Parse JSON results data
+            const results = rows.map(row => ({
+              ...row,
+              results_data: JSON.parse(row.results_data)
+            }));
+            resolve(results);
+          }
+        }
+      );
+    });
+  }
+};
+
 module.exports = {
   db,
   user: userFunctions,
   purchase: purchaseFunctions,
-  usage: usageFunctions
+  usage: usageFunctions,
+  email: emailFunctions,
+  searchResults: searchResultsFunctions
 };

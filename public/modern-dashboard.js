@@ -71,6 +71,59 @@ const statusContainer = document.getElementById('statusContainer');
 const resultsSection = document.getElementById('resultsSection');
 const buyCreditsModal = document.getElementById('buyCreditsModal');
 
+// Load persistent data from database
+async function loadPersistentData() {
+    console.log('Loading persistent data...');
+    
+    try {
+        // Load search results
+        const searchResponse = await fetch('/api/search-results', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+        });
+        
+        if (searchResponse.ok) {
+            const searchData = await searchResponse.json();
+            if (searchData.searchResults) {
+                // Convert database format to frontend format
+                searchHistory = searchData.searchResults.map(result => ({
+                    query: result.search_query,
+                    results: result.results_data,
+                    count: result.results_count,
+                    timestamp: result.created_at,
+                    sessionId: result.session_id
+                }));
+                console.log(`Loaded ${searchHistory.length} search results from database`);
+            }
+        }
+        
+        // Load sent emails
+        const emailResponse = await fetch('/api/email/history', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+        });
+        
+        if (emailResponse.ok) {
+            const emailData = await emailResponse.json();
+            if (emailData.emails) {
+                sentEmails = emailData.emails;
+                console.log(`Loaded ${sentEmails.length} sent emails from database`);
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error loading persistent data:', error);
+    }
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Dashboard JS loaded');
@@ -1023,6 +1076,9 @@ async function checkAuth() {
             currentUser = data.user;
             console.log('User authenticated:', currentUser);
             showDashboard();
+            
+            // Load persistent data after authentication
+            await loadPersistentData();
         } else {
             console.log('User not authenticated, showing auth form');
             // Clear invalid token

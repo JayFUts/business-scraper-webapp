@@ -7,7 +7,7 @@ const session = require('express-session');
 const path = require('path');
 
 // Import our modules
-const { user, usage } = require('./database');
+const { user, usage, email, searchResults } = require('./database');
 const { generateToken, requireAuth, optionalAuth } = require('./auth');
 const { verifyEmailConfig, sendEmail, emailProviders } = require('./email-config');
 
@@ -531,21 +531,19 @@ app.post('/api/email/send', requireAuth, async (req, res) => {
     });
     
     if (result.success) {
-      // Record email sent in database
-      const db = require('sqlite3').verbose();
-      const database = new db.Database('./leadfinders.db');
-      
-      await new Promise((resolve, reject) => {
-        database.run(`
-          INSERT INTO sent_emails (user_id, recipient_email, subject, body, sent_at)
-          VALUES (?, ?, ?, ?, datetime('now'))
-        `, [req.user.id, to, subject, body], function(err) {
-          if (err) reject(err);
-          else resolve();
-        });
-      });
-      
-      database.close();
+      // Record email sent in database using our database functions
+      try {
+        await email.recordSentEmail(
+          req.user.id, 
+          to, 
+          req.body.businessName || 'Unknown Business', 
+          subject, 
+          body
+        );
+        console.log('Email recorded in database');
+      } catch (dbError) {
+        console.error('Failed to record email in database:', dbError);
+      }
     }
     
     res.json(result);
@@ -558,26 +556,22 @@ app.post('/api/email/send', requireAuth, async (req, res) => {
 // Get sent emails history
 app.get('/api/email/history', requireAuth, async (req, res) => {
   try {
-    const db = require('sqlite3').verbose();
-    const database = new db.Database('./leadfinders.db');
-    
-    const emails = await new Promise((resolve, reject) => {
-      database.all(`
-        SELECT * FROM sent_emails 
-        WHERE user_id = ? 
-        ORDER BY sent_at DESC 
-        LIMIT 50
-      `, [req.user.id], (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
-      });
-    });
-    
-    database.close();
-    res.json({ emails });
+    const sentEmails = await email.getSentEmails(req.user.id, 50);
+    res.json({ emails: sentEmails });
   } catch (error) {
     console.error('Email history error:', error);
     res.status(500).json({ error: 'Failed to get email history' });
+  }
+});
+
+// Get saved search results
+app.get('/api/search-results', requireAuth, async (req, res) => {
+  try {
+    const results = await searchResults.getSearchResults(req.user.id, 20);
+    res.json({ searchResults: results });
+  } catch (error) {
+    console.error('Get search results error:', error);
+    res.status(500).json({ error: 'Failed to get search results' });
   }
 });
 
@@ -1118,6 +1112,20 @@ app.post('/api/scrape', requireAuth, async (req, res) => {
           results.length, 
           sessionId
         );
+        
+        // Save search results to database for persistence
+        try {
+          await searchResults.saveSearchResults(
+            req.user.id,
+            sessionId,
+            searchQuery,
+            results,
+            results.length
+          );
+          console.log('Search results saved to database');
+        } catch (error) {
+          console.error('Failed to save search results:', error);
+        }
       })
       .catch(async (error) => {
         activeSessions.get(sessionId).status = `Error: ${error.message}`;
