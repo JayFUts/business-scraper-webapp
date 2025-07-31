@@ -119,6 +119,38 @@ async function loadPersistentData() {
             }
         }
         
+        // Load user settings
+        const settingsResponse = await fetch('/api/user-settings', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+        });
+        
+        if (settingsResponse.ok) {
+            const settingsData = await settingsResponse.json();
+            if (settingsData.settings) {
+                // Update userSettings object with database data
+                userSettings = {
+                    companyName: settingsData.settings.company_name || '',
+                    companyDescription: settingsData.settings.company_description || '',
+                    services: settingsData.settings.services || '',
+                    contactPerson: settingsData.settings.contact_person || '',
+                    emailSignature: settingsData.settings.email_signature || '',
+                    companyLogo: settingsData.settings.company_logo || null
+                };
+                
+                // Also load email configuration if exists
+                if (settingsData.settings.email_config) {
+                    localStorage.setItem('emailConfig', JSON.stringify(settingsData.settings.email_config));
+                }
+                
+                console.log('Loaded user settings from database');
+            }
+        }
+        
     } catch (error) {
         console.error('Error loading persistent data:', error);
     }
@@ -974,7 +1006,7 @@ function removeLogo() {
 }
 
 // Save settings
-function saveSettings() {
+async function saveSettings() {
     // Get form values
     const companyName = document.getElementById('companyName')?.value || '';
     const companyDescription = document.getElementById('companyDescription')?.value || '';
@@ -992,15 +1024,40 @@ function saveSettings() {
         emailSignature
     };
     
-    // Save to localStorage
-    localStorage.setItem('userSettings', JSON.stringify(userSettings));
-    
-    // Show success message
-    showNotification('Settings saved successfully!', 'success');
+    try {
+        // Save to database
+        const emailConfig = localStorage.getItem('emailConfig') ? JSON.parse(localStorage.getItem('emailConfig')) : null;
+        
+        const response = await fetch('/api/user-settings', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                ...userSettings,
+                emailConfig: emailConfig
+            })
+        });
+        
+        if (response.ok) {
+            // Also save to localStorage as backup
+            localStorage.setItem('userSettings', JSON.stringify(userSettings));
+            showNotification('Settings saved successfully!', 'success');
+        } else {
+            throw new Error('Failed to save settings to database');
+        }
+    } catch (error) {
+        console.error('Error saving settings:', error);
+        // Fallback to localStorage only
+        localStorage.setItem('userSettings', JSON.stringify(userSettings));
+        showNotification('Settings saved locally (database save failed)', 'warning');
+    }
 }
 
 // Reset settings
-function resetSettings() {
+async function resetSettings() {
     if (confirm('Are you sure you want to reset all settings to defaults?')) {
         userSettings = {
             companyName: '',
@@ -1011,9 +1068,32 @@ function resetSettings() {
             companyLogo: null
         };
         
-        localStorage.removeItem('userSettings');
-        showSettingsSection(); // Refresh the page
-        showNotification('Settings reset to defaults', 'info');
+        try {
+            // Reset in database
+            const response = await fetch('/api/user-settings', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify(userSettings)
+            });
+            
+            if (response.ok) {
+                localStorage.removeItem('userSettings');
+                showSettingsSection(); // Refresh the page
+                showNotification('Settings reset to defaults', 'info');
+            } else {
+                throw new Error('Failed to reset settings in database');
+            }
+        } catch (error) {
+            console.error('Error resetting settings:', error);
+            // Fallback to local reset
+            localStorage.removeItem('userSettings');
+            showSettingsSection();
+            showNotification('Settings reset locally (database reset failed)', 'warning');
+        }
     }
 }
 

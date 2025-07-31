@@ -7,7 +7,7 @@ const session = require('express-session');
 const path = require('path');
 
 // Import our modules
-const { user, usage, email, searchResults } = require('./database');
+const { user, usage, email, searchResults, userSettings } = require('./database');
 const { generateToken, requireAuth, optionalAuth } = require('./auth');
 const { verifyEmailConfig, sendEmail, emailProviders } = require('./email-config');
 
@@ -572,6 +572,28 @@ app.get('/api/search-results', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Get search results error:', error);
     res.status(500).json({ error: 'Failed to get search results' });
+  }
+});
+
+// Save user settings
+app.post('/api/user-settings', requireAuth, async (req, res) => {
+  try {
+    await userSettings.saveUserSettings(req.user.id, req.body);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Save user settings error:', error);
+    res.status(500).json({ error: 'Failed to save user settings' });
+  }
+});
+
+// Get user settings
+app.get('/api/user-settings', requireAuth, async (req, res) => {
+  try {
+    const settings = await userSettings.getUserSettings(req.user.id);
+    res.json({ settings });
+  } catch (error) {
+    console.error('Get user settings error:', error);
+    res.status(500).json({ error: 'Failed to get user settings' });
   }
 });
 

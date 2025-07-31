@@ -78,6 +78,23 @@ function initDatabase() {
         FOREIGN KEY (user_id) REFERENCES users (id)
       )
     `);
+    
+    // User settings table for persistent storage
+    db.run(`
+      CREATE TABLE IF NOT EXISTS user_settings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER UNIQUE,
+        company_name TEXT,
+        company_description TEXT,
+        services TEXT,
+        contact_person TEXT,
+        email_signature TEXT,
+        company_logo TEXT,
+        email_config TEXT,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id)
+      )
+    `);
 
     console.log('✅ Database tables initialized');
   });
@@ -373,11 +390,66 @@ const searchResultsFunctions = {
   }
 };
 
+// User settings functions
+const userSettingsFunctions = {
+  // Save or update user settings
+  saveUserSettings: async (userId, settings) => {
+    return new Promise((resolve, reject) => {
+      const {
+        companyName, companyDescription, services, contactPerson,
+        emailSignature, companyLogo, emailConfig
+      } = settings;
+      
+      db.run(`
+        INSERT OR REPLACE INTO user_settings 
+        (user_id, company_name, company_description, services, contact_person, email_signature, company_logo, email_config, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `, [
+        userId, companyName, companyDescription, services, contactPerson,
+        emailSignature, companyLogo, JSON.stringify(emailConfig)
+      ], function(err) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(this.lastID);
+        }
+      });
+    });
+  },
+
+  // Get user settings
+  getUserSettings: async (userId) => {
+    return new Promise((resolve, reject) => {
+      db.get(
+        'SELECT * FROM user_settings WHERE user_id = ?',
+        [userId],
+        (err, row) => {
+          if (err) {
+            reject(err);
+          } else {
+            if (row) {
+              // Parse JSON email config
+              const settings = {
+                ...row,
+                email_config: row.email_config ? JSON.parse(row.email_config) : null
+              };
+              resolve(settings);
+            } else {
+              resolve(null); // No settings found
+            }
+          }
+        }
+      );
+    });
+  }
+};
+
 module.exports = {
   db,
   user: userFunctions,
   purchase: purchaseFunctions,
   usage: usageFunctions,
   email: emailFunctions,
-  searchResults: searchResultsFunctions
+  searchResults: searchResultsFunctions,
+  userSettings: userSettingsFunctions
 };
