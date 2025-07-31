@@ -325,7 +325,17 @@
                     body: JSON.stringify({ email, password }),
                 });
                 
-                const data = await response.json();
+                let data;
+                const responseText = await response.text();
+                console.log('Response text:', responseText);
+                
+                try {
+                    data = JSON.parse(responseText);
+                } catch (jsonError) {
+                    console.log('JSON parse error:', jsonError);
+                    // If it's not valid JSON, treat as a string error message
+                    data = { error: responseText };
+                }
                 
                 if (response.ok) {
                     // Store token and redirect to dashboard

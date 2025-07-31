@@ -333,7 +333,18 @@
                 
                 console.log('Response status:', response.status);
                 console.log('Response headers:', response.headers);
-                const data = await response.json();
+                
+                let data;
+                const responseText = await response.text();
+                console.log('Response text:', responseText);
+                
+                try {
+                    data = JSON.parse(responseText);
+                } catch (jsonError) {
+                    console.log('JSON parse error:', jsonError);
+                    // If it's not valid JSON, treat as a string error message
+                    data = { error: responseText };
+                }
                 console.log('Response data:', data);
                 
                 if (response.ok) {

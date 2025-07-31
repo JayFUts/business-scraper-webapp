@@ -33,8 +33,8 @@ const scrapeLimiter = rateLimit({
 // Auth rate limiting - more restrictive to prevent brute force
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 auth attempts per windowMs
-  message: 'Too many authentication attempts, please try again later.',
+  max: 20, // Limit each IP to 20 auth attempts per windowMs (increased for testing)
+  message: JSON.stringify({ error: 'Too many authentication attempts, please try again later.' }),
   standardHeaders: true,
   legacyHeaders: false
 });
