@@ -871,7 +871,7 @@ async function processBusinessInPage(page, business, sessionId) {
       waitUntil: 'domcontentloaded',
       timeout: 15000 
     });
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(1500); // Slightly increased for better data loading
     
     // Handle consent if needed
     await handleConsentIfNeeded(page);
@@ -879,25 +879,74 @@ async function processBusinessInPage(page, business, sessionId) {
     const details = await page.evaluate(() => {
       const data = {
         name: document.querySelector('h1')?.textContent || '',
-        address: document.querySelector('[data-item-id*="address"]')?.textContent || '',
-        phone: document.querySelector('[data-item-id*="phone"]')?.textContent || 
-                document.querySelector('button[data-item-id*="phone"]')?.textContent || '',
+        address: '',
+        phone: '',
         website: null,
         email: null
       };
       
-      // Look for website
+      // Improved address extraction with multiple selectors
+      const addressSelectors = [
+        '[data-item-id*="address"]',
+        'button[data-item-id*="address"]',
+        '[data-value="Address"]',
+        'div[data-value="Address"] + div',
+        'span[data-value="Address"]',
+        '.Io6YTe.fontBodyMedium', // Google Maps address class
+        '.rogA2c .Io6YTe'
+      ];
+      
+      for (const selector of addressSelectors) {
+        const element = document.querySelector(selector);
+        if (element && element.textContent && element.textContent.trim()) {
+          data.address = element.textContent.trim();
+          break;
+        }
+      }
+      
+      // Improved phone extraction with multiple selectors
+      const phoneSelectors = [
+        '[data-item-id*="phone"]',
+        'button[data-item-id*="phone"]',
+        '[data-value="Phone"]',
+        'div[data-value="Phone"] + div',
+        'span[data-value="Phone"]',
+        'a[href^="tel:"]',
+        '.Io6YTe.fontBodyMedium[href^="tel:"]',
+        'button[aria-label*="phone"]',
+        'button[aria-label*="Call"]'
+      ];
+      
+      for (const selector of phoneSelectors) {
+        const element = document.querySelector(selector);
+        if (element) {
+          let phoneText = element.textContent || element.getAttribute('href') || '';
+          if (phoneText.startsWith('tel:')) {
+            phoneText = phoneText.replace('tel:', '');
+          }
+          if (phoneText && phoneText.trim() && phoneText.length > 5) {
+            data.phone = phoneText.trim();
+            break;
+          }
+        }
+      }
+      
+      // Improved website extraction with multiple selectors
       const websiteSelectors = [
         'a[data-item-id*="authority"]',
-        'a[href*="http"]:not([href*="google"]):not([href*="maps"])',
-        'button[data-item-id*="authority"]'
+        'button[data-item-id*="authority"]',
+        'a[data-value="Website"]',
+        'div[data-value="Website"] a',
+        'a[href*="http"]:not([href*="google"]):not([href*="maps"]):not([href*="facebook"]):not([href*="instagram"])',
+        '.CsEnBe a[href^="http"]', // Google Maps website button
+        'button[aria-label*="Website"]'
       ];
       
       for (const selector of websiteSelectors) {
         const el = document.querySelector(selector);
         if (el) {
           const href = el.getAttribute('href') || el.getAttribute('data-url');
-          if (href) {
+          if (href && href.includes('http')) {
             const urlMatch = href.match(/[?&]q=([^&]+)/);
             data.website = urlMatch ? decodeURIComponent(urlMatch[1]) : href;
             break;
