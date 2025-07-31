@@ -45,7 +45,7 @@ function createTransporter(config) {
     throw new Error('Invalid email provider');
   }
   
-  return nodemailer.createTransporter(transportConfig);
+  return nodemailer.createTransport(transportConfig);
 }
 
 // Verify email configuration
