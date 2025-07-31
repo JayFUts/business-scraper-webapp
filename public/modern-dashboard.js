@@ -48,6 +48,8 @@ let currentUser = null;
 let currentSessionId = null;
 let statusCheckInterval = null;
 let searchHistory = []; // Store completed searches
+let activeSearch = null; // Track active search state
+let isSearchInProgress = false; // Track if search is in progress
 
 // DOM elements
 const authSection = document.getElementById('authSection');
@@ -267,10 +269,15 @@ function handleNavigation(section, clickedItem) {
     const statusContainer = document.getElementById('statusContainer');
     const resultsSection = document.getElementById('resultsSection');
     
-    // Hide all sections first
+    // Hide all sections first (but keep search running in background)
     if (searchContainer) searchContainer.style.display = 'none';
-    if (statusContainer) statusContainer.style.display = 'none';
+    if (statusContainer && !isSearchInProgress) statusContainer.style.display = 'none';
     if (resultsSection) resultsSection.style.display = 'none';
+    
+    // If search is in progress, show indicator
+    if (isSearchInProgress) {
+        showSearchProgressIndicator();
+    }
     
     switch(section.toLowerCase()) {
         case 'search':
@@ -791,6 +798,69 @@ async function logout() {
     showAuth();
 }
 
+// Show search progress indicator
+function showSearchProgressIndicator() {
+    // Remove any existing indicator
+    const existingIndicator = document.querySelector('.search-progress-indicator');
+    if (existingIndicator) existingIndicator.remove();
+    
+    // Create new indicator
+    const indicator = document.createElement('div');
+    indicator.className = 'search-progress-indicator';
+    indicator.innerHTML = `
+        <div class="indicator-content">
+            <div class="indicator-spinner"></div>
+            <span>Search in progress...</span>
+        </div>
+    `;
+    document.body.appendChild(indicator);
+}
+
+// Show completion notification
+function showCompletionNotification(resultCount, searchQuery) {
+    // Remove progress indicator
+    const indicator = document.querySelector('.search-progress-indicator');
+    if (indicator) indicator.remove();
+    
+    // Create notification
+    const notification = document.createElement('div');
+    notification.className = 'completion-notification';
+    notification.innerHTML = `
+        <div class="notification-content">
+            <svg class="notification-icon" viewBox="0 0 24 24" fill="none">
+                <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div class="notification-text">
+                <h4>Search Complete!</h4>
+                <p>Found ${resultCount} businesses for "${escapeHtml(searchQuery)}"</p>
+            </div>
+            <button class="notification-action" onclick="viewResults()">View Results</button>
+            <button class="notification-close" onclick="this.parentElement.parentElement.remove()">✕</button>
+        </div>
+    `;
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 10 seconds
+    setTimeout(() => {
+        notification.remove();
+    }, 10000);
+}
+
+// Navigate to results tab
+function viewResults() {
+    // Find Results nav item by text content
+    const navItems = document.querySelectorAll('.nav-item');
+    for (let item of navItems) {
+        const span = item.querySelector('span');
+        if (span && span.textContent === 'Results') {
+            item.click();
+            return;
+        }
+    }
+    // Fallback: Results is typically the 3rd nav item
+    if (navItems[2]) navItems[2].click();
+}
+
 // Start search
 async function startSearch() {
     const searchInputElement = document.getElementById('searchInput');
@@ -828,6 +898,10 @@ async function startSearch() {
     if (resultsSectionElement) resultsSectionElement.style.display = 'none';
     
     updateStatus('🚀 Starting search... Grab a coffee, this takes 2-3 minutes!', 5);
+    
+    // Set search in progress flag
+    isSearchInProgress = true;
+    activeSearch = { query, startTime: Date.now() };
     
     try {
         const response = await fetch('/api/scrape', {
@@ -895,17 +969,25 @@ async function checkSearchStatus() {
             
             if (status === 'completed') {
                 clearInterval(statusCheckInterval);
+                isSearchInProgress = false;
+                
                 updateStatus('🎉 Search completed! Found ' + (results?.length || 0) + ' businesses', 100);
                 
                 // Store the completed search
                 const completedSearch = {
                     id: currentSessionId,
-                    query: document.getElementById('searchInput').value.trim(),
+                    query: activeSearch?.query || document.getElementById('searchInput').value.trim(),
                     results: results,
                     resultCount: results?.length || 0,
                     completedAt: new Date().toLocaleString()
                 };
                 searchHistory.unshift(completedSearch); // Add to beginning of array
+                
+                // Show notification if user is on a different tab
+                const searchContainer = document.querySelector('.search-container');
+                if (!searchContainer || searchContainer.style.display === 'none') {
+                    showCompletionNotification(results?.length || 0, completedSearch.query);
+                }
                 
                 setTimeout(() => {
                     // Show success message and reset
@@ -917,6 +999,7 @@ async function checkSearchStatus() {
                 }, 1500);
             } else if (status === 'failed') {
                 clearInterval(statusCheckInterval);
+                isSearchInProgress = false;
                 updateStatus('❌ Search failed. Please try again.', 0);
                 resetSearchButton();
                 
