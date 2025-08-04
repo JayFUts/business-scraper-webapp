@@ -427,6 +427,10 @@ function handleNavigation(section, clickedItem) {
             showResultsSection();
             break;
             
+        case 'bulk email':
+            showBulkEmailSection();
+            break;
+            
         case 'emails sent':
             showEmailsSentSection();
             break;
@@ -524,6 +528,12 @@ function showHistorySection() {
                                         <path d="M1.66665 7.5H18.3333M5.83331 2.5V17.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                                     </svg>
                                     Excel
+                                </button>
+                                <button onclick="bulkEmailFromHistory(${index})" class="btn btn-success btn-sm">
+                                    <svg class="btn-icon" viewBox="0 0 20 20" fill="none" style="width: 16px; height: 16px;">
+                                        <path d="M3 8L10 13L17 8M3 6C3 5.46957 3.21071 4.96086 3.58579 4.58579C3.96086 4.21071 4.46957 4 5 4H15C15.5304 4 16.0391 4.21071 16.4142 4.58579C16.7893 4.96086 17 5.46957 17 6V14C17 14.5304 16.7893 15.0391 16.4142 15.4142C16.0391 15.7893 15.5304 16 15 16H5C4.46957 16 3.96086 15.7893 3.58579 15.4142C3.21071 15.0391 3 14.5304 3 14V6Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                    Bulk Email
                                 </button>
                             </div>
                         </div>
@@ -638,6 +648,120 @@ function showResultsSection() {
             mainContent.appendChild(header);
             mainContent.appendChild(resultsList);
         }
+        mainContent.style.display = 'block';
+    }
+}
+
+// Show bulk email management section
+function showBulkEmailSection() {
+    updatePageHeader('Bulk Email Management', 'Manage and send bulk emails to your search results');
+    
+    const mainContent = document.querySelector('.search-container');
+    if (mainContent) {
+        if (searchHistory.length === 0) {
+            mainContent.innerHTML = `
+                <div class="search-header">
+                    <h1 class="page-title">Bulk Email Management</h1>
+                    <p class="page-subtitle">Manage and send bulk emails to your search results</p>
+                </div>
+                <div class="bulk-email-content">
+                    <div class="empty-state">
+                        <div class="empty-icon">📧</div>
+                        <h3>No Search Results Yet</h3>
+                        <p>Start by performing searches to collect business contacts for bulk emailing.</p>
+                        <button onclick="handleNavigation('Search', document.querySelector('.nav-item'))" class="btn btn-primary">
+                            <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                                <path d="M19 19L13 13M13 13C15.2091 13 17 11.2091 17 9C17 6.79086 15.2091 5 13 5C10.7909 5 9 6.79086 9 9C9 11.2091 10.7909 13 13 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Start Searching
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else {
+            let bulkEmailHTML = `
+                <div class="search-header">
+                    <h1 class="page-title">Bulk Email Management</h1>
+                    <p class="page-subtitle">Send targeted bulk emails to your search results</p>
+                </div>
+                <div class="bulk-email-content">
+                    <div class="bulk-campaigns-list">
+            `;
+            
+            // Group searches and show email composition for each
+            searchHistory.forEach((search, index) => {
+                const businessesWithEmail = search.results ? search.results.filter(business => business.email) : [];
+                const totalBusinesses = search.results ? search.results.length : 0;
+                const searchDate = new Date(search.timestamp).toLocaleDateString();
+                const searchTime = new Date(search.timestamp).toLocaleTimeString();
+                
+                bulkEmailHTML += `
+                    <div class="bulk-campaign-card">
+                        <div class="campaign-header">
+                            <div class="campaign-info">
+                                <h3 class="campaign-title">${escapeHtml(search.query)}</h3>
+                                <div class="campaign-meta">
+                                    <span class="campaign-date">${searchDate} • ${searchTime}</span>
+                                    <span class="campaign-stats">
+                                        <strong>${businessesWithEmail.length}</strong> with emails / ${totalBusinesses} total
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="campaign-actions">
+                                ${businessesWithEmail.length > 0 ? `
+                                    <button onclick="composeBulkEmail(${index})" class="btn btn-primary">
+                                        <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                                            <path d="M3 8L10 13L17 8M3 6C3 5.46957 3.21071 4.96086 3.58579 4.58579C3.96086 4.21071 4.46957 4 5 4H15C15.5304 4 16.0391 4.21071 16.4142 4.58579C16.7893 4.96086 17 5.46957 17 6V14C17 14.5304 16.7893 15.0391 16.4142 15.4142C16.0391 15.7893 15.5304 16 15 16H5C4.46957 16 3.96086 15.7893 3.58579 15.4142C3.21071 15.0391 3 14.5304 3 14V6Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                        Compose Bulk Email
+                                    </button>
+                                ` : `
+                                    <span class="no-emails-text">No email addresses found</span>
+                                `}
+                            </div>
+                        </div>
+                        
+                        ${businessesWithEmail.length > 0 ? `
+                            <div class="campaign-preview">
+                                <div class="preview-header">
+                                    <h4>Businesses with Email Addresses (${businessesWithEmail.length})</h4>
+                                    <button onclick="toggleBusinessList(${index})" class="btn btn-outline btn-sm toggle-btn">
+                                        <span class="toggle-text">Show List</span>
+                                        <svg class="toggle-icon" viewBox="0 0 20 20" fill="none">
+                                            <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div class="business-list" id="businessList${index}" style="display: none;">
+                                    ${businessesWithEmail.slice(0, 10).map(business => `
+                                        <div class="business-item">
+                                            <div class="business-info">
+                                                <strong>${escapeHtml(business.name)}</strong>
+                                                <span class="business-email">${escapeHtml(business.email)}</span>
+                                            </div>
+                                            ${business.phone ? `<span class="business-phone">${escapeHtml(business.phone)}</span>` : ''}
+                                        </div>
+                                    `).join('')}
+                                    ${businessesWithEmail.length > 10 ? `
+                                        <div class="more-businesses">
+                                            + ${businessesWithEmail.length - 10} more businesses
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            
+            bulkEmailHTML += `
+                    </div>
+                </div>
+            `;
+            
+            mainContent.innerHTML = bulkEmailHTML;
+        }
+        
         mainContent.style.display = 'block';
     }
 }
@@ -2866,8 +2990,14 @@ function previewBulkEmail() {
     const template = document.getElementById('bulkEmailBody').value;
     
     const companyName = userSettings.companyName || 'Your Company';
-    const personalizedSubject = subject.replace(/{businessName}/g, firstBusiness.name).replace(/{companyName}/g, companyName);
-    const personalizedBody = template.replace(/{businessName}/g, firstBusiness.name).replace(/{companyName}/g, companyName);
+    const personalizedSubject = subject
+        .replace(/{businessName}/g, firstBusiness.name)
+        .replace(/{companyName}/g, companyName)
+        .replace(/{searchQuery}/g, currentSearchQuery || '');
+    const personalizedBody = template
+        .replace(/{businessName}/g, firstBusiness.name)
+        .replace(/{companyName}/g, companyName)
+        .replace(/{searchQuery}/g, currentSearchQuery || '');
     
     const previewModal = document.createElement('div');
     previewModal.className = 'modal';
@@ -2938,8 +3068,14 @@ async function startBulkEmailSending() {
         
         try {
             // Personalize email
-            const personalizedSubject = subject.replace(/{businessName}/g, business.name).replace(/{companyName}/g, companyName);
-            const personalizedBody = template.replace(/{businessName}/g, business.name).replace(/{companyName}/g, companyName);
+            const personalizedSubject = subject
+                .replace(/{businessName}/g, business.name)
+                .replace(/{companyName}/g, companyName)
+                .replace(/{searchQuery}/g, currentSearchQuery || '');
+            const personalizedBody = template
+                .replace(/{businessName}/g, business.name)
+                .replace(/{companyName}/g, companyName)
+                .replace(/{searchQuery}/g, currentSearchQuery || '');
             
             // Send email
             const response = await fetch('/api/email/send-bulk', {
@@ -2993,4 +3129,188 @@ async function startBulkEmailSending() {
     setTimeout(() => {
         closeBulkEmailModal();
     }, 3000);
+}
+
+// Bulk email from history
+function bulkEmailFromHistory(index) {
+    if (searchHistory[index] && searchHistory[index].results) {
+        // Set current results for bulk email functionality
+        currentSearchResults = searchHistory[index].results;
+        currentSearchQuery = searchHistory[index].query;
+        
+        // Show bulk email modal
+        showBulkEmailModal();
+    }
+}
+
+// Toggle business list visibility in bulk email tab
+function toggleBusinessList(index) {
+    const businessList = document.getElementById(`businessList${index}`);
+    const toggleBtn = businessList.parentElement.querySelector('.toggle-btn');
+    const toggleText = toggleBtn.querySelector('.toggle-text');
+    const toggleIcon = toggleBtn.querySelector('.toggle-icon');
+    
+    if (businessList.style.display === 'none') {
+        businessList.style.display = 'block';
+        toggleText.textContent = 'Hide List';
+        toggleIcon.style.transform = 'rotate(180deg)';
+    } else {
+        businessList.style.display = 'none';
+        toggleText.textContent = 'Show List';
+        toggleIcon.style.transform = 'rotate(0deg)';
+    }
+}
+
+// Compose bulk email for specific search
+function composeBulkEmail(index) {
+    if (searchHistory[index] && searchHistory[index].results) {
+        // Set current results for bulk email functionality
+        currentSearchResults = searchHistory[index].results;
+        currentSearchQuery = searchHistory[index].query;
+        
+        // Show enhanced bulk email modal with campaign info
+        showEnhancedBulkEmailModal(searchHistory[index]);
+    }
+}
+
+// Enhanced bulk email modal with campaign context
+function showEnhancedBulkEmailModal(searchData) {
+    // Check if we have email configuration
+    const config = emailConfig[emailConfig.activeProvider];
+    if (!config || !config.email || !config.password) {
+        alert('Please configure your email settings first in the Settings page.');
+        return;
+    }
+
+    // Get businesses with email addresses
+    const businessesWithEmail = searchData.results.filter(business => business.email);
+    
+    if (businessesWithEmail.length === 0) {
+        alert('No businesses with email addresses found in this search.');
+        return;
+    }
+
+    // Remove existing modal if any
+    const existingModal = document.getElementById('bulkEmailModal');
+    if (existingModal) existingModal.remove();
+    
+    const searchDate = new Date(searchData.timestamp).toLocaleDateString();
+    
+    const modal = document.createElement('div');
+    modal.id = 'bulkEmailModal';
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content bulk-email-modal enhanced-modal">
+            <div class="modal-header">
+                <h2>Bulk Email Campaign</h2>
+                <button class="modal-close" onclick="closeBulkEmailModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="campaign-context">
+                    <div class="context-card">
+                        <div class="context-icon">🎯</div>
+                        <div class="context-info">
+                            <h3>Campaign Target</h3>
+                            <p class="search-query">"${escapeHtml(searchData.query)}"</p>
+                            <p class="search-date">Search performed on ${searchDate}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bulk-email-info">
+                    <div class="info-card">
+                        <div class="info-icon">📧</div>
+                        <div class="info-content">
+                            <h3>Ready to Send</h3>
+                            <p>Sending to <strong>${businessesWithEmail.length}</strong> businesses with email addresses</p>
+                            <p class="info-subtext">from ${searchData.results.length} total results</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Subject Line</label>
+                    <input type="text" id="bulkEmailSubject" class="form-input" placeholder="Enter email subject" value="">
+                </div>
+                
+                <div class="form-group">
+                    <label>Email Template</label>
+                    <div class="template-info">
+                        <p class="template-note">Use placeholders: <code>{businessName}</code>, <code>{companyName}</code>, <code>{searchQuery}</code></p>
+                    </div>
+                    <textarea id="bulkEmailBody" class="form-input email-textarea" rows="12" placeholder="Dear {businessName},
+
+I hope this email finds you well. My name is [Your Name] from {companyName}.
+
+I came across your business while researching '{searchQuery}' and was impressed by what I saw.
+
+[Your personalized message here]
+
+Best regards,
+[Your Name]
+{companyName}"></textarea>
+                </div>
+
+                <div class="bulk-preview">
+                    <button onclick="previewBulkEmail()" class="btn btn-secondary">
+                        <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                            <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="currentColor" stroke-width="2"/>
+                            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        Preview First Email
+                    </button>
+                </div>
+
+                <div id="bulkEmailProgress" class="bulk-progress" style="display: none;">
+                    <div class="progress-header">
+                        <h4>Sending Progress</h4>
+                        <span id="bulkProgressText">0 / ${businessesWithEmail.length}</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="bulkProgressFill"></div>
+                    </div>
+                    <div class="progress-details">
+                        <div class="progress-status" id="bulkProgressStatus">Preparing to send...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button onclick="closeBulkEmailModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="startBulkEmailSending()" class="btn btn-success" id="sendBulkEmailBtn">
+                    <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    Send to ${businessesWithEmail.length} Businesses
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.style.display = 'flex';
+
+    // Auto-fill subject and template with campaign context
+    const companyName = userSettings.companyName || 'Your Company';
+    document.getElementById('bulkEmailSubject').value = `Partnership Opportunity - ${searchData.query}`;
+    
+    const defaultTemplate = `Dear {businessName},
+
+I hope this email finds you well. My name is ${userSettings.contactPerson || '[Your Name]'} from ${companyName}.
+
+I came across your business while researching "${searchData.query}" in your area and was impressed by what I saw.
+
+${userSettings.companyDescription ? 
+`We specialize in ${userSettings.companyDescription} and ` : 
+'We '}would love to explore potential partnership opportunities with businesses like yours.
+
+${userSettings.services ? 
+`Our services include: ${userSettings.services}
+
+` : ''}I believe there could be great synergy between our companies. Would you be open to a brief conversation to discuss how we might work together?
+
+Best regards,
+${userSettings.contactPerson || '[Your Name]'}
+${companyName}${userSettings.emailSignature ? '\n\n' + userSettings.emailSignature : ''}`;
+
+    document.getElementById('bulkEmailBody').value = defaultTemplate;
 }
