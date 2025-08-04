@@ -3040,17 +3040,26 @@ function previewBulkEmail() {
 async function startBulkEmailSending() {
     const businessesWithEmail = currentSearchResults.filter(business => business.email);
     const subject = document.getElementById('bulkEmailSubject').value.trim();
-    const template = document.getElementById('bulkEmailBody').value.trim();
+    const aiPersonalizationEnabled = document.getElementById('aiPersonalizationToggle').checked;
     
-    if (!subject || !template) {
-        alert('Please fill in both subject and email template.');
-        return;
+    // For AI personalization, we don't need template validation
+    if (!aiPersonalizationEnabled) {
+        const template = document.getElementById('bulkEmailBody').value.trim();
+        if (!subject || !template) {
+            alert('Please fill in both subject and email template.');
+            return;
+        }
+    } else {
+        if (!subject) {
+            alert('Please fill in the subject line.');
+            return;
+        }
     }
 
     // Show progress section
     document.getElementById('bulkEmailProgress').style.display = 'block';
     document.getElementById('sendBulkEmailBtn').disabled = true;
-    document.getElementById('sendBulkEmailBtn').textContent = 'Sending...';
+    document.getElementById('sendBulkEmailBtn').textContent = aiPersonalizationEnabled ? 'Generating AI Emails...' : 'Sending...';
     
     const progressFill = document.getElementById('bulkProgressFill');
     const progressText = document.getElementById('bulkProgressText');
@@ -3058,6 +3067,89 @@ async function startBulkEmailSending() {
     
     let successCount = 0;
     let errorCount = 0;
+    let totalTokens = 0;
+    
+    // Check if AI personalization is enabled
+    if (aiPersonalizationEnabled) {
+        // Use AI bulk email endpoint
+        progressStatus.textContent = 'Generating personalized emails using AI...';
+        
+        try {
+            const response = await fetch('/api/email/send-bulk-ai', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    businesses: businessesWithEmail,
+                    subject: subject,
+                    userCompany: userSettings.companyName || '',
+                    userProduct: userSettings.services || '',
+                    companyDescription: userSettings.companyDescription || '',
+                    contactPerson: userSettings.contactPerson || '',
+                    emailConfig: {
+                        provider: emailConfig.activeProvider,
+                        ...emailConfig[emailConfig.activeProvider],
+                        companyName: userSettings.companyName || ''
+                    }
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to send AI bulk emails');
+            }
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                successCount = result.totalSent;
+                errorCount = result.totalFailed;
+                totalTokens = result.totalTokens;
+                
+                // Update progress to complete
+                progressFill.style.width = '100%';
+                progressText.textContent = `${businessesWithEmail.length} / ${businessesWithEmail.length}`;
+                
+                // Show final results with AI info
+                progressStatus.innerHTML = `
+                    <div class="bulk-results">
+                        <div class="result-item success">🤖 AI emails generated and sent: ${successCount}</div>
+                        ${errorCount > 0 ? `<div class="result-item error">❌ Failed: ${errorCount}</div>` : ''}
+                        <div class="result-item info">🧠 AI tokens used: ${totalTokens}</div>
+                    </div>
+                `;
+                
+                document.getElementById('sendBulkEmailBtn').textContent = 'Completed';
+                
+                // Show notification
+                showNotification(`AI bulk email completed! Generated and sent ${successCount} personalized emails using ${totalTokens} AI tokens.`, successCount > 0 ? 'success' : 'error');
+                
+                // Auto-close after 5 seconds
+                setTimeout(() => {
+                    closeBulkEmailModal();
+                }, 5000);
+                
+                return;
+            } else {
+                throw new Error('AI bulk email process failed');
+            }
+            
+        } catch (error) {
+            console.error('AI bulk email error:', error);
+            progressStatus.innerHTML = `
+                <div class="bulk-results">
+                    <div class="result-item error">❌ AI bulk email failed: ${error.message}</div>
+                </div>
+            `;
+            
+            document.getElementById('sendBulkEmailBtn').textContent = 'Failed';
+            document.getElementById('sendBulkEmailBtn').disabled = false;
+            
+            showNotification('AI bulk email failed: ' + error.message, 'error');
+            return;
+        }
+    }
+    
+    // Regular template-based bulk email (original logic)
+    const template = document.getElementById('bulkEmailBody').value.trim();
     
     // Get custom variables from inputs
     const customCompanyName = document.getElementById('customCompanyName')?.value || userSettings.companyName || 'Your Company';
@@ -3239,6 +3331,31 @@ function showEnhancedBulkEmailModal(searchData) {
                     <input type="text" id="bulkEmailSubject" class="form-input" placeholder="Enter email subject" value="">
                 </div>
                 
+                <div class="ai-personalization-section">
+                    <div class="ai-toggle-group">
+                        <div class="toggle-header">
+                            <div class="ai-icon">🤖</div>
+                            <div class="toggle-content">
+                                <h4>AI Personalization</h4>
+                                <p>Generate unique, personalized emails for each business using AI</p>
+                            </div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="aiPersonalizationToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="ai-description" style="display: none;" id="aiDescription">
+                        <div class="ai-info">
+                            <svg class="info-icon" viewBox="0 0 20 20" fill="none">
+                                <path d="M18 10C18 14.4183 14.4183 18 10 18C5.58172 18 2 14.4183 2 10C2 5.58172 5.58172 2 10 2C14.4183 2 18 5.58172 18 10Z" stroke="currentColor" stroke-width="2"/>
+                                <path d="M10 14V10M10 6H10.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            <span>AI will analyze each business and create personalized content similar to "Generate Personalized Email"</span>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="placeholder-variables">
                     <h4>Customize Your Variables</h4>
                     <div class="variables-grid">
@@ -3344,4 +3461,34 @@ ${userSettings.contactPerson || '[Your Name]'}
 {companyName}${userSettings.emailSignature ? '\n\n' + userSettings.emailSignature : ''}`;
 
     document.getElementById('bulkEmailBody').value = defaultTemplate;
+    
+    // Handle AI personalization toggle
+    const aiToggle = document.getElementById('aiPersonalizationToggle');
+    const aiDescription = document.getElementById('aiDescription');
+    const placeholderVariables = document.querySelector('.placeholder-variables');
+    const emailTemplate = document.getElementById('bulkEmailBody');
+    
+    aiToggle.addEventListener('change', function() {
+        if (this.checked) {
+            aiDescription.style.display = 'block';
+            placeholderVariables.style.display = 'none';
+            emailTemplate.style.display = 'none';
+            
+            // Show AI template info
+            const templateInfo = document.querySelector('.template-info');
+            if (templateInfo) {
+                templateInfo.innerHTML = '<p class="ai-template-note">🤖 AI will generate unique, personalized content for each business based on their information and your company details.</p>';
+            }
+        } else {
+            aiDescription.style.display = 'none';
+            placeholderVariables.style.display = 'block';
+            emailTemplate.style.display = 'block';
+            
+            // Restore original template info
+            const templateInfo = document.querySelector('.template-info');
+            if (templateInfo) {
+                templateInfo.innerHTML = '<p class="template-note">Variables will be replaced: <code>{businessName}</code> (per business), <code>{companyName}</code>, <code>{searchQuery}</code></p>';
+            }
+        }
+    });
 }

@@ -472,6 +472,183 @@ Do not include "Subject:" in your response - just the email body.`;
   }
 });
 
+// AI-powered bulk email generation and sending
+app.post('/api/email/send-bulk-ai', requireAuth, async (req, res) => {
+  try {
+    const { businesses, subject, userCompany, userProduct, companyDescription, contactPerson, emailConfig } = req.body;
+    
+    if (!businesses || !Array.isArray(businesses) || businesses.length === 0) {
+      return res.status(400).json({ error: 'No businesses provided' });
+    }
+    
+    if (!emailConfig || !emailConfig.email || !emailConfig.password) {
+      return res.status(400).json({ error: 'Email configuration not set up' });
+    }
+    
+    // Check if user has OpenAI API key configured
+    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+    if (!OPENAI_API_KEY) {
+      return res.status(500).json({ error: 'AI email generation not configured. Please contact support.' });
+    }
+    
+    const results = [];
+    let totalTokens = 0;
+    
+    // Process each business with AI personalization
+    for (let i = 0; i < businesses.length; i++) {
+      const business = businesses[i];
+      
+      if (!business.email) {
+        results.push({
+          business: business.name,
+          email: 'N/A',
+          success: false,
+          error: 'No email address available'
+        });
+        continue;
+      }
+      
+      try {
+        // Generate AI-personalized email for this specific business
+        const prompt = `Generate a professional, personalized cold email for the following business:
+
+Business Information:
+- Name: ${business.name}
+- Type: ${business.type || 'Business'}
+- Location: ${business.address || 'Not specified'}
+- Website: ${business.website || 'Not specified'}
+- Phone: ${business.phone || 'Not specified'}
+
+Sender Information:
+- Company: ${userCompany || 'Our company'}
+- Services/Products: ${userProduct || 'our services'}
+- Company Description: ${companyDescription || 'Not specified'}
+- Contact Person: ${contactPerson || 'Sales Team'}
+
+Write a short, personalized email (max 150 words) that:
+1. Shows you've researched their business specifically
+2. Identifies a relevant problem or opportunity for their industry/location
+3. Briefly explains how the sender's services can provide value
+4. Includes a clear, non-pushy call-to-action
+5. Uses a friendly, professional tone
+6. Mentions specific details about their business when possible
+
+The email should be in the same language as the business location (Dutch for Netherlands addresses, English otherwise).
+Do not include "Subject:" in your response - just the email body.`;
+
+        // Call OpenAI API for this business
+        const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${OPENAI_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              {
+                role: 'system',
+                content: 'You are an expert at writing personalized cold emails that get responses. Keep emails short, relevant, and focused on value.'
+              },
+              {
+                role: 'user',
+                content: prompt
+              }
+            ],
+            temperature: 0.7,
+            max_tokens: 400
+          })
+        });
+
+        if (!aiResponse.ok) {
+          throw new Error('Failed to generate AI email');
+        }
+
+        const aiData = await aiResponse.json();
+        const personalizedBody = aiData.choices[0].message.content.replace(/Subject:\s*.+?\n/i, '').trim();
+        totalTokens += aiData.usage?.total_tokens || 0;
+        
+        // Generate personalized subject line if not provided
+        let personalizedSubject = subject;
+        if (!personalizedSubject) {
+          if (userCompany && userProduct) {
+            if (userProduct.toLowerCase().includes('web') || userProduct.toLowerCase().includes('website')) {
+              personalizedSubject = `Improve ${business.name}'s online presence`;
+            } else if (userProduct.toLowerCase().includes('marketing')) {
+              personalizedSubject = `Grow ${business.name} with targeted marketing`;
+            } else if (userProduct.toLowerCase().includes('consult')) {
+              personalizedSubject = `Strategic consultation for ${business.name}`;
+            } else {
+              personalizedSubject = `${userProduct} solutions for ${business.name}`;
+            }
+          } else {
+            personalizedSubject = `Partnership opportunity for ${business.name}`;
+          }
+        }
+        
+        // Send the personalized email
+        const emailResult = await sendEmail(emailConfig, {
+          to: business.email,
+          subject: personalizedSubject,
+          text: personalizedBody
+        });
+        
+        // Record in database if successful
+        if (emailResult.success) {
+          try {
+            await email.recordSentEmail(
+              req.user.id, 
+              business.email, 
+              business.name, 
+              personalizedSubject, 
+              personalizedBody
+            );
+          } catch (dbError) {
+            console.error('Failed to record AI bulk email in database:', dbError);
+          }
+        }
+        
+        results.push({
+          business: business.name,
+          email: business.email,
+          success: emailResult.success,
+          subject: personalizedSubject,
+          body: personalizedBody,
+          tokens_used: aiData.usage?.total_tokens || 0,
+          error: emailResult.error || null
+        });
+        
+        // Rate limiting between emails (1 second delay)
+        if (i < businesses.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        
+      } catch (businessError) {
+        console.error(`Failed to process business ${business.name}:`, businessError);
+        results.push({
+          business: business.name,
+          email: business.email,
+          success: false,
+          error: businessError.message
+        });
+      }
+    }
+    
+    // Send final results
+    res.json({
+      success: true,
+      results: results,
+      totalSent: results.filter(r => r.success).length,
+      totalFailed: results.filter(r => !r.success).length,
+      totalTokens: totalTokens
+    });
+    
+  } catch (error) {
+    console.error('AI bulk email send error:', error);
+    res.status(500).json({ error: 'Failed to send AI bulk emails' });
+  }
+});
+
 // Get email providers info
 app.get('/api/email/providers', requireAuth, (req, res) => {
   res.json({
