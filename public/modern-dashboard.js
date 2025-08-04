@@ -2989,15 +2989,18 @@ function previewBulkEmail() {
     const subject = document.getElementById('bulkEmailSubject').value;
     const template = document.getElementById('bulkEmailBody').value;
     
-    const companyName = userSettings.companyName || 'Your Company';
+    // Get custom variables from inputs
+    const customCompanyName = document.getElementById('customCompanyName')?.value || userSettings.companyName || 'Your Company';
+    const customSearchQuery = document.getElementById('customSearchQuery')?.value || currentSearchQuery || '';
+    
     const personalizedSubject = subject
         .replace(/{businessName}/g, firstBusiness.name)
-        .replace(/{companyName}/g, companyName)
-        .replace(/{searchQuery}/g, currentSearchQuery || '');
+        .replace(/{companyName}/g, customCompanyName)
+        .replace(/{searchQuery}/g, customSearchQuery);
     const personalizedBody = template
         .replace(/{businessName}/g, firstBusiness.name)
-        .replace(/{companyName}/g, companyName)
-        .replace(/{searchQuery}/g, currentSearchQuery || '');
+        .replace(/{companyName}/g, customCompanyName)
+        .replace(/{searchQuery}/g, customSearchQuery);
     
     const previewModal = document.createElement('div');
     previewModal.className = 'modal';
@@ -3055,7 +3058,10 @@ async function startBulkEmailSending() {
     
     let successCount = 0;
     let errorCount = 0;
-    const companyName = userSettings.companyName || 'Your Company';
+    
+    // Get custom variables from inputs
+    const customCompanyName = document.getElementById('customCompanyName')?.value || userSettings.companyName || 'Your Company';
+    const customSearchQuery = document.getElementById('customSearchQuery')?.value || currentSearchQuery || '';
     
     for (let i = 0; i < businessesWithEmail.length; i++) {
         const business = businessesWithEmail[i];
@@ -3067,15 +3073,15 @@ async function startBulkEmailSending() {
         progressStatus.textContent = `Sending to ${business.name}...`;
         
         try {
-            // Personalize email
+            // Personalize email with custom variables
             const personalizedSubject = subject
                 .replace(/{businessName}/g, business.name)
-                .replace(/{companyName}/g, companyName)
-                .replace(/{searchQuery}/g, currentSearchQuery || '');
+                .replace(/{companyName}/g, customCompanyName)
+                .replace(/{searchQuery}/g, customSearchQuery);
             const personalizedBody = template
                 .replace(/{businessName}/g, business.name)
-                .replace(/{companyName}/g, companyName)
-                .replace(/{searchQuery}/g, currentSearchQuery || '');
+                .replace(/{companyName}/g, customCompanyName)
+                .replace(/{searchQuery}/g, customSearchQuery);
             
             // Send email
             const response = await fetch('/api/email/send-bulk', {
@@ -3233,10 +3239,31 @@ function showEnhancedBulkEmailModal(searchData) {
                     <input type="text" id="bulkEmailSubject" class="form-input" placeholder="Enter email subject" value="">
                 </div>
                 
+                <div class="placeholder-variables">
+                    <h4>Customize Your Variables</h4>
+                    <div class="variables-grid">
+                        <div class="variable-group">
+                            <label>Company Name <code>{companyName}</code></label>
+                            <input type="text" id="customCompanyName" class="form-input" placeholder="Your company name" value="">
+                        </div>
+                        <div class="variable-group">
+                            <label>Search Query <code>{searchQuery}</code></label>
+                            <input type="text" id="customSearchQuery" class="form-input" placeholder="Search term" value="" readonly>
+                        </div>
+                    </div>
+                    <div class="variable-note">
+                        <svg class="note-icon" viewBox="0 0 20 20" fill="none">
+                            <path d="M18 10C18 14.4183 14.4183 18 10 18C5.58172 18 2 14.4183 2 10C2 5.58172 5.58172 2 10 2C14.4183 2 18 5.58172 18 10Z" stroke="currentColor" stroke-width="2"/>
+                            <path d="M10 14V10M10 6H10.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        <span><code>{businessName}</code> will be automatically personalized for each business</span>
+                    </div>
+                </div>
+                
                 <div class="form-group">
                     <label>Email Template</label>
                     <div class="template-info">
-                        <p class="template-note">Use placeholders: <code>{businessName}</code>, <code>{companyName}</code>, <code>{searchQuery}</code></p>
+                        <p class="template-note">Variables will be replaced: <code>{businessName}</code> (per business), <code>{companyName}</code>, <code>{searchQuery}</code></p>
                     </div>
                     <textarea id="bulkEmailBody" class="form-input email-textarea" rows="12" placeholder="Dear {businessName},
 
@@ -3293,11 +3320,15 @@ Best regards,
     const companyName = userSettings.companyName || 'Your Company';
     document.getElementById('bulkEmailSubject').value = `Partnership Opportunity - ${searchData.query}`;
     
+    // Fill variable inputs
+    document.getElementById('customCompanyName').value = companyName;
+    document.getElementById('customSearchQuery').value = searchData.query;
+    
     const defaultTemplate = `Dear {businessName},
 
-I hope this email finds you well. My name is ${userSettings.contactPerson || '[Your Name]'} from ${companyName}.
+I hope this email finds you well. My name is ${userSettings.contactPerson || '[Your Name]'} from {companyName}.
 
-I came across your business while researching "${searchData.query}" in your area and was impressed by what I saw.
+I came across your business while researching "{searchQuery}" in your area and was impressed by what I saw.
 
 ${userSettings.companyDescription ? 
 `We specialize in ${userSettings.companyDescription} and ` : 
@@ -3310,7 +3341,7 @@ ${userSettings.services ?
 
 Best regards,
 ${userSettings.contactPerson || '[Your Name]'}
-${companyName}${userSettings.emailSignature ? '\n\n' + userSettings.emailSignature : ''}`;
+{companyName}${userSettings.emailSignature ? '\n\n' + userSettings.emailSignature : ''}`;
 
     document.getElementById('bulkEmailBody').value = defaultTemplate;
 }
