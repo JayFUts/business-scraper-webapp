@@ -1691,13 +1691,13 @@ function showEmailModal(business, emailData, isLoading) {
                             </svg>
                             Regenerate
                         </button>
-                        <button class="btn btn-primary" onclick="copyEmail()">
+                        <button class="btn btn-primary" onclick="copyEmail(event)">
                             <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
                                 <path d="M8 4H6C5.46957 4 4.96086 4.21071 4.58579 4.58579C4.21071 4.96086 4 5.46957 4 6V18C4 18.5304 4.21071 19.0391 4.58579 19.4142C4.96086 19.7893 5.46957 20 6 20H14C14.5304 20 15.0391 19.7893 15.4142 19.4142C15.7893 19.0391 16 18.5304 16 18V16M8 4V2C8 1.46957 8.21071 0.960859 8.58579 0.585786C8.96086 0.210714 9.46957 0 10 0H14L20 6V14C20 14.5304 19.7893 15.0391 19.4142 15.4142C19.0391 15.7893 18.5304 16 18 16H16M8 4H10C10.5304 4 11.0391 4.21071 11.4142 4.58579C11.7893 4.96086 12 5.46957 12 6V8H16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
                             Copy to Clipboard
                         </button>
-                        <button onclick="sendEmailDirectly(${escapeHtml(JSON.stringify(business))}, '${escapeHtml(emailData.subject)}', \`${escapeHtml(emailData.body)}\`)" class="btn btn-success">
+                        <button onclick="sendEmailDirectly(${JSON.stringify(business)}, '${emailData.subject}', \`${emailData.body}\`)" class="btn btn-success">
                             <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
                                 <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" stroke="currentColor" stroke-width="2"/>
                             </svg>
@@ -1730,7 +1730,7 @@ function closeEmailModal() {
 }
 
 // Copy email to clipboard
-async function copyEmail() {
+async function copyEmail(event) {
     const subject = document.getElementById('emailSubject').value;
     const body = document.getElementById('emailBody').value;
     const fullEmail = `Subject: ${subject}\n\n${body}`;
@@ -2659,11 +2659,19 @@ function saveEmailConfiguration() {
 }
 
 // Send email directly
-async function sendEmailDirectly(business, subject, body) {
+async function sendEmailDirectly(businessData, subject, body) {
+    // Parse business object if it's a string
+    const business = typeof businessData === 'string' ? JSON.parse(businessData) : businessData;
+    
     const config = emailConfig[emailConfig.activeProvider];
     
     if (!config || !config.email || !config.password) {
         alert('Please configure your email settings first in the Settings page.');
+        return;
+    }
+    
+    if (!business.email) {
+        alert('No email address found for this business.');
         return;
     }
     
