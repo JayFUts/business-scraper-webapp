@@ -251,6 +251,11 @@ function setupEventListeners() {
         exportExcelButton.addEventListener('click', () => exportResults('excel'));
     }
     
+    const bulkEmailButton = document.getElementById('bulkEmailButton');
+    if (bulkEmailButton) {
+        bulkEmailButton.addEventListener('click', showBulkEmailModal);
+    }
+    
     // Modal event listeners
     const modalOverlay = document.getElementById('modalOverlay');
     if (modalOverlay) {
@@ -2251,6 +2256,9 @@ function displayResults(results) {
     statusContainer.style.display = 'none';
     resultsSection.style.display = 'block';
     
+    // Store results for bulk email functionality
+    currentSearchResults = results;
+    
     document.getElementById('resultCount').textContent = results.length;
     
     const resultsGrid = document.getElementById('results');
@@ -2713,4 +2721,276 @@ async function sendEmailDirectly(businessData, subject, body) {
     } catch (error) {
         alert('Error sending email: ' + error.message);
     }
+}
+
+// Global variable to store current results for bulk email
+let currentSearchResults = [];
+
+// Show bulk email modal
+function showBulkEmailModal() {
+    // Check if we have email configuration
+    const config = emailConfig[emailConfig.activeProvider];
+    if (!config || !config.email || !config.password) {
+        alert('Please configure your email settings first in the Settings page.');
+        return;
+    }
+
+    // Get businesses with email addresses
+    const businessesWithEmail = currentSearchResults.filter(business => business.email);
+    
+    if (businessesWithEmail.length === 0) {
+        alert('No businesses with email addresses found in current results.');
+        return;
+    }
+
+    // Remove existing modal if any
+    const existingModal = document.getElementById('bulkEmailModal');
+    if (existingModal) existingModal.remove();
+    
+    const modal = document.createElement('div');
+    modal.id = 'bulkEmailModal';
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content bulk-email-modal">
+            <div class="modal-header">
+                <h2>Send Bulk Email</h2>
+                <button class="modal-close" onclick="closeBulkEmailModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="bulk-email-info">
+                    <div class="info-card">
+                        <div class="info-icon">📧</div>
+                        <div class="info-content">
+                            <h3>Ready to Send</h3>
+                            <p>Sending to <strong>${businessesWithEmail.length}</strong> businesses with email addresses</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Subject Line</label>
+                    <input type="text" id="bulkEmailSubject" class="form-input" placeholder="Enter email subject" value="">
+                </div>
+                
+                <div class="form-group">
+                    <label>Email Template</label>
+                    <div class="template-info">
+                        <p class="template-note">Use placeholders: <code>{businessName}</code>, <code>{companyName}</code></p>
+                    </div>
+                    <textarea id="bulkEmailBody" class="form-input email-textarea" rows="12" placeholder="Dear {businessName},
+
+I hope this email finds you well. My name is [Your Name] from {companyName}.
+
+[Your message here]
+
+Best regards,
+[Your Name]
+{companyName}"></textarea>
+                </div>
+
+                <div class="bulk-preview">
+                    <button onclick="previewBulkEmail()" class="btn btn-secondary">
+                        <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                            <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="currentColor" stroke-width="2"/>
+                            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        Preview First Email
+                    </button>
+                </div>
+
+                <div id="bulkEmailProgress" class="bulk-progress" style="display: none;">
+                    <div class="progress-header">
+                        <h4>Sending Progress</h4>
+                        <span id="bulkProgressText">0 / ${businessesWithEmail.length}</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="bulkProgressFill"></div>
+                    </div>
+                    <div class="progress-details">
+                        <div class="progress-status" id="bulkProgressStatus">Preparing to send...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button onclick="closeBulkEmailModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="startBulkEmailSending()" class="btn btn-success" id="sendBulkEmailBtn">
+                    <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
+                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    Send to ${businessesWithEmail.length} Businesses
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.style.display = 'flex';
+
+    // Auto-fill subject and template
+    const companyName = userSettings.companyName || 'Your Company';
+    document.getElementById('bulkEmailSubject').value = `Partnership Opportunity with ${companyName}`;
+    
+    const defaultTemplate = `Dear {businessName},
+
+I hope this email finds you well. My name is ${userSettings.contactPerson || '[Your Name]'} from ${companyName}.
+
+${userSettings.companyDescription ? 
+`We specialize in ${userSettings.companyDescription} and ` : 
+'We '}would love to explore potential partnership opportunities with your business.
+
+${userSettings.services ? 
+`Our services include: ${userSettings.services}
+
+` : ''}I believe there could be great synergy between our companies. Would you be open to a brief conversation to discuss how we might work together?
+
+Best regards,
+${userSettings.contactPerson || '[Your Name]'}
+${companyName}${userSettings.emailSignature ? '\n\n' + userSettings.emailSignature : ''}`;
+
+    document.getElementById('bulkEmailBody').value = defaultTemplate;
+}
+
+// Close bulk email modal
+function closeBulkEmailModal() {
+    const modal = document.getElementById('bulkEmailModal');
+    if (modal) modal.remove();
+}
+
+// Preview first email with personalization
+function previewBulkEmail() {
+    const businessesWithEmail = currentSearchResults.filter(business => business.email);
+    if (businessesWithEmail.length === 0) return;
+
+    const firstBusiness = businessesWithEmail[0];
+    const subject = document.getElementById('bulkEmailSubject').value;
+    const template = document.getElementById('bulkEmailBody').value;
+    
+    const companyName = userSettings.companyName || 'Your Company';
+    const personalizedSubject = subject.replace(/{businessName}/g, firstBusiness.name).replace(/{companyName}/g, companyName);
+    const personalizedBody = template.replace(/{businessName}/g, firstBusiness.name).replace(/{companyName}/g, companyName);
+    
+    const previewModal = document.createElement('div');
+    previewModal.className = 'modal';
+    previewModal.innerHTML = `
+        <div class="modal-content email-modal">
+            <div class="modal-header">
+                <h2>Email Preview - ${escapeHtml(firstBusiness.name)}</h2>
+                <button class="modal-close" onclick="this.closest('.modal').remove()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="email-preview">
+                    <div class="form-group">
+                        <label>To</label>
+                        <div class="form-display">${escapeHtml(firstBusiness.name)} (${escapeHtml(firstBusiness.email)})</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Subject</label>
+                        <div class="form-display">${escapeHtml(personalizedSubject)}</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Content</label>
+                        <div class="email-content">${escapeHtml(personalizedBody).replace(/\n/g, '<br>')}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button onclick="this.closest('.modal').remove()" class="btn btn-primary">Close Preview</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(previewModal);
+    previewModal.style.display = 'flex';
+}
+
+// Start bulk email sending process
+async function startBulkEmailSending() {
+    const businessesWithEmail = currentSearchResults.filter(business => business.email);
+    const subject = document.getElementById('bulkEmailSubject').value.trim();
+    const template = document.getElementById('bulkEmailBody').value.trim();
+    
+    if (!subject || !template) {
+        alert('Please fill in both subject and email template.');
+        return;
+    }
+
+    // Show progress section
+    document.getElementById('bulkEmailProgress').style.display = 'block';
+    document.getElementById('sendBulkEmailBtn').disabled = true;
+    document.getElementById('sendBulkEmailBtn').textContent = 'Sending...';
+    
+    const progressFill = document.getElementById('bulkProgressFill');
+    const progressText = document.getElementById('bulkProgressText');
+    const progressStatus = document.getElementById('bulkProgressStatus');
+    
+    let successCount = 0;
+    let errorCount = 0;
+    const companyName = userSettings.companyName || 'Your Company';
+    
+    for (let i = 0; i < businessesWithEmail.length; i++) {
+        const business = businessesWithEmail[i];
+        
+        // Update progress
+        const progress = ((i + 1) / businessesWithEmail.length) * 100;
+        progressFill.style.width = progress + '%';
+        progressText.textContent = `${i + 1} / ${businessesWithEmail.length}`;
+        progressStatus.textContent = `Sending to ${business.name}...`;
+        
+        try {
+            // Personalize email
+            const personalizedSubject = subject.replace(/{businessName}/g, business.name).replace(/{companyName}/g, companyName);
+            const personalizedBody = template.replace(/{businessName}/g, business.name).replace(/{companyName}/g, companyName);
+            
+            // Send email
+            const response = await fetch('/api/email/send-bulk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    to: business.email,
+                    businessName: business.name,
+                    subject: personalizedSubject,
+                    body: personalizedBody,
+                    emailConfig: {
+                        provider: emailConfig.activeProvider,
+                        ...emailConfig[emailConfig.activeProvider],
+                        companyName: userSettings.companyName || ''
+                    }
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                successCount++;
+                progressStatus.textContent = `✅ Sent to ${business.name}`;
+            } else {
+                errorCount++;
+                progressStatus.textContent = `❌ Failed to send to ${business.name}: ${result.error}`;
+            }
+        } catch (error) {
+            errorCount++;
+            progressStatus.textContent = `❌ Error sending to ${business.name}: ${error.message}`;
+        }
+        
+        // Small delay to avoid overwhelming the server
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    
+    // Show final results
+    progressStatus.innerHTML = `
+        <div class="bulk-results">
+            <div class="result-item success">✅ Successfully sent: ${successCount}</div>
+            ${errorCount > 0 ? `<div class="result-item error">❌ Failed: ${errorCount}</div>` : ''}
+        </div>
+    `;
+    
+    document.getElementById('sendBulkEmailBtn').textContent = 'Completed';
+    
+    // Show notification
+    showNotification(`Bulk email completed! Sent to ${successCount} businesses.`, successCount > 0 ? 'success' : 'error');
+    
+    // Auto-close after 3 seconds
+    setTimeout(() => {
+        closeBulkEmailModal();
+    }, 3000);
 }

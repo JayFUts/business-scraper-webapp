@@ -553,6 +553,48 @@ app.post('/api/email/send', requireAuth, async (req, res) => {
   }
 });
 
+// Send bulk email
+app.post('/api/email/send-bulk', requireAuth, async (req, res) => {
+  try {
+    const { to, businessName, subject, body, emailConfig } = req.body;
+    
+    if (!to || !businessName || !subject || !body) {
+      return res.status(400).json({ error: 'Missing required email fields' });
+    }
+    
+    if (!emailConfig || !emailConfig.email || !emailConfig.password) {
+      return res.status(400).json({ error: 'Email configuration not set up' });
+    }
+    
+    // Send email
+    const result = await sendEmail(emailConfig, {
+      to,
+      subject,
+      text: body
+    });
+    
+    // Record in database if successful
+    if (result.success) {
+      try {
+        await email.recordSentEmail(
+          req.user.id, 
+          to, 
+          businessName, 
+          subject, 
+          body
+        );
+      } catch (dbError) {
+        console.error('Failed to record bulk email in database:', dbError);
+      }
+    }
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Bulk email send error:', error);
+    res.status(500).json({ error: 'Failed to send bulk email' });
+  }
+});
+
 // Get sent emails history
 app.get('/api/email/history', requireAuth, async (req, res) => {
   try {
