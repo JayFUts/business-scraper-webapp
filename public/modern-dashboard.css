@@ -1895,6 +1895,47 @@ body {
     padding: var(--space-xl);
 }
 
+/* Settings form inputs and textareas */
+.settings-card .form-input,
+.settings-card textarea.form-input {
+    width: 100%;
+    padding: var(--space-sm) var(--space-md);
+    border: 2px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    font-size: var(--text-base);
+    font-family: inherit;
+    line-height: 1.5;
+    color: var(--text-primary);
+    background: rgba(248, 250, 252, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.settings-card .form-input:focus,
+.settings-card textarea.form-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 
+        0 0 0 3px rgba(99, 102, 241, 0.1),
+        inset 0 2px 4px rgba(0, 0, 0, 0.06),
+        0 4px 12px rgba(99, 102, 241, 0.15);
+    transform: translateY(-1px);
+}
+
+.settings-card .form-input:hover,
+.settings-card textarea.form-input:hover {
+    border-color: rgba(99, 102, 241, 0.3);
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.settings-card textarea.form-input {
+    resize: vertical;
+    min-height: 100px;
+}
+
 .setting-item {
     display: flex;
     align-items: center;
