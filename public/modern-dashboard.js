@@ -1826,7 +1826,7 @@ function showEmailModal(business, emailData, isLoading) {
                             </svg>
                             Copy to Clipboard
                         </button>
-                        <button onclick="sendEmailDirectly(${JSON.stringify(business)}, '${emailData.subject}', \`${emailData.body}\`)" class="btn btn-success">
+                        <button class="btn btn-success" id="sendEmailBtn">
                             <svg class="btn-icon" viewBox="0 0 20 20" fill="none">
                                 <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" stroke="currentColor" stroke-width="2"/>
                             </svg>
@@ -1849,6 +1849,16 @@ function showEmailModal(business, emailData, isLoading) {
         document.getElementById('userProduct').addEventListener('change', (e) => {
             localStorage.setItem('userProduct', e.target.value);
         });
+        
+        // Add event listener for send email button
+        const sendBtn = document.getElementById('sendEmailBtn');
+        if (sendBtn) {
+            sendBtn.addEventListener('click', async () => {
+                const subject = document.getElementById('emailSubject').value;
+                const body = document.getElementById('emailBody').value;
+                await sendEmailDirectly(business, subject, body);
+            });
+        }
     }
 }
 
@@ -2822,7 +2832,9 @@ async function sendEmailDirectly(businessData, subject, body) {
         return;
     }
     
-    if (!business.email) {
+    const businessEmail = business.emails && business.emails.length > 0 ? business.emails[0] : (business.email || null);
+    
+    if (!businessEmail) {
         alert('No email address found for this business.');
         return;
     }
@@ -2832,7 +2844,7 @@ async function sendEmailDirectly(businessData, subject, body) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                to: business.email,
+                to: businessEmail,
                 subject: subject,
                 body: body,
                 emailConfig: {
