@@ -828,31 +828,75 @@ async function scrapeBusinesses(searchQuery, sessionId) {
       '--disable-dev-shm-usage',
       '--disable-gpu',
       '--memory-pressure-off',
-      '--max_old_space_size=4096',
+      '--max_old_space_size=2048', // Reduced memory limit
       '--aggressive-cache-discard',
       '--disable-background-timer-throttling',
       '--disable-backgrounding-occluded-windows',
-      '--disable-renderer-backgrounding'
+      '--disable-renderer-backgrounding',
+      '--disable-extensions',
+      '--disable-plugins',
+      '--disable-images', // Disable image loading to save memory
+      '--disable-javascript-harmony-shipping',
+      '--disable-ipc-flooding-protection',
+      '--single-process', // Use single process to reduce memory overhead
+      '--disable-features=TranslateUI',
+      '--disable-component-extensions-with-background-pages',
+      '--disable-background-networking'
     ]
   });
   
   const page = await browser.newPage();
   
-  // Set user agent
+  // Configure page for memory efficiency
+  await page.setViewportSize({ width: 1280, height: 720 });
   await page.setExtraHTTPHeaders({
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
   });
   
+  // Block unnecessary resources to save memory and improve speed
+  await page.route('**/*', (route) => {
+    const resourceType = route.request().resourceType();
+    if (['image', 'stylesheet', 'font', 'media'].includes(resourceType)) {
+      route.abort();
+    } else {
+      route.continue();
+    }
+  });
+  
+  // Add crash recovery for the page
+  page.on('crash', () => {
+    console.error(`Session ${sessionId}: Page crashed, attempting recovery...`);
+    updateSessionStatus(sessionId, 'Error: Browser crashed, attempting recovery...');
+    throw new Error('Page crashed during scraping');
+  });
+
   try {
     // Update status
     updateSessionStatus(sessionId, 'Opening Google Maps...');
     
-    // Go directly to search URL
+    // Go directly to search URL with retry logic
     const searchUrl = `https://www.google.com/maps/search/${encodeURIComponent(searchQuery)}`;
-    await page.goto(searchUrl, { 
-      waitUntil: 'domcontentloaded',
-      timeout: 30000 
-    });
+    
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    while (retryCount < maxRetries) {
+      try {
+        await page.goto(searchUrl, { 
+          waitUntil: 'domcontentloaded',
+          timeout: 20000 // Reduced timeout
+        });
+        break; // Success, exit retry loop
+      } catch (error) {
+        retryCount++;
+        if (retryCount >= maxRetries) {
+          throw error;
+        }
+        console.log(`Session ${sessionId}: Navigation failed, retry ${retryCount}/${maxRetries}`);
+        updateSessionStatus(sessionId, `Navigation failed, retrying... (${retryCount}/${maxRetries})`);
+        await page.waitForTimeout(2000);
+      }
+    }
     
     await page.waitForTimeout(1000);
     
@@ -883,7 +927,7 @@ async function scrapeBusinesses(searchQuery, sessionId) {
     updateSessionStatus(sessionId, 'Waiting for results to load...');
     await page.waitForTimeout(2000);
     
-    // Scroll to load more businesses with dynamic optimization
+    // Scroll to load more businesses with crash protection
     updateSessionStatus(sessionId, 'Loading more businesses by scrolling...');
     
     const feed = await page.$('div[role="feed"]');
@@ -891,38 +935,73 @@ async function scrapeBusinesses(searchQuery, sessionId) {
       let previousCount = 0;
       let noNewResultsCount = 0;
       
-      for (let i = 0; i < 10; i++) {
-        updateSessionStatus(sessionId, `Scrolling to load more results... (${i + 1}/10)`);
-        
-        await page.evaluate(() => {
-          const feed = document.querySelector('div[role="feed"]');
-          if (feed) {
-            feed.scrollTo(0, feed.scrollHeight);
+      // Reduced iterations to prevent memory overflow
+      for (let i = 0; i < 6; i++) {
+        try {
+          updateSessionStatus(sessionId, `Scrolling to load more results... (${i + 1}/6)`);
+          
+          // Check if page is still responsive before scrolling
+          const isPageResponsive = await page.evaluate(() => {
+            try {
+              return document.readyState === 'complete' || document.readyState === 'interactive';
+            } catch {
+              return false;
+            }
+          });
+          
+          if (!isPageResponsive) {
+            console.log(`Session ${sessionId}: Page not responsive, stopping scroll`);
+            break;
           }
-        });
-        
-        // Dynamic wait time based on page loading state
-        const isLoading = await page.evaluate(() => {
-          return document.querySelector('[role="progressbar"]') !== null;
-        });
-        
-        await page.waitForTimeout(isLoading ? 2000 : 1000);
-        
-        const currentCount = await page.evaluate(() => {
-          const feed = document.querySelector('div[role="feed"]');
-          return feed ? feed.querySelectorAll('a[href*="/maps/place/"]').length : 0;
-        });
-        
-        console.log(`After scroll ${i + 1}: Found ${currentCount} businesses`);
-        
-        // Check if we found new results
-        if (currentCount === previousCount) {
-          noNewResultsCount++;
-        } else {
-          noNewResultsCount = 0;
-        }
-        
-        previousCount = currentCount;
+          
+          // Safe scrolling with try-catch
+          await page.evaluate(() => {
+            try {
+              const feed = document.querySelector('div[role="feed"]');
+              if (feed) {
+                feed.scrollTo(0, feed.scrollHeight);
+              }
+            } catch (error) {
+              console.error('Scroll error:', error);
+            }
+          });
+          
+          // Shorter wait times to prevent timeout
+          await page.waitForTimeout(800);
+          
+          // Check loading state safely
+          const isLoading = await page.evaluate(() => {
+            try {
+              return document.querySelector('[role="progressbar"]') !== null;
+            } catch {
+              return false;
+            }
+          });
+          
+          if (isLoading) {
+            await page.waitForTimeout(1200);
+          }
+          
+          // Count results safely
+          const currentCount = await page.evaluate(() => {
+            try {
+              const feed = document.querySelector('div[role="feed"]');
+              return feed ? feed.querySelectorAll('a[href*="/maps/place/"]').length : 0;
+            } catch {
+              return 0;
+            }
+          });
+          
+          console.log(`Session ${sessionId}: After scroll ${i + 1}: Found ${currentCount} businesses`);
+          
+          // Check if we found new results
+          if (currentCount === previousCount) {
+            noNewResultsCount++;
+          } else {
+            noNewResultsCount = 0;
+          }
+          
+          previousCount = currentCount;
         
         // Early termination conditions
         if (currentCount >= 50) {
@@ -1062,10 +1141,26 @@ async function scrapeBusinesses(searchQuery, sessionId) {
     return detailedResults;
     
   } catch (error) {
+    console.error(`Session ${sessionId}: Scraping error:`, error);
     updateSessionStatus(sessionId, `Error: ${error.message}`);
     throw error;
   } finally {
-    await browser.close();
+    // Aggressive cleanup to prevent memory leaks
+    try {
+      if (page && !page.isClosed()) {
+        await page.close();
+      }
+    } catch (error) {
+      console.error(`Session ${sessionId}: Error closing page:`, error);
+    }
+    
+    try {
+      if (browser && browser.isConnected()) {
+        await browser.close();
+      }
+    } catch (error) {
+      console.error(`Session ${sessionId}: Error closing browser:`, error);
+    }
   }
 }
 
