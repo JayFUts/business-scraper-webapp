@@ -1002,21 +1002,28 @@ async function scrapeBusinesses(searchQuery, sessionId) {
           }
           
           previousCount = currentCount;
-        
-        // Early termination conditions
-        if (currentCount >= 50) {
-          console.log(`Found ${currentCount} businesses - target of 50+ reached`);
-          break;
-        }
-        
-        if (noNewResultsCount >= 2) {
-          console.log(`No new results for ${noNewResultsCount} scrolls, stopping early`);
-          break;
-        }
-        
-        if (i > 3 && currentCount < 10) {
-          console.log('Very few results found, stopping scroll');
-          break;
+          
+          // Early termination conditions
+          if (currentCount >= 50) {
+            console.log(`Session ${sessionId}: Found ${currentCount} businesses - target reached`);
+            break;
+          }
+          
+          if (noNewResultsCount >= 2) {
+            console.log(`Session ${sessionId}: No new results for ${noNewResultsCount} scrolls, stopping`);
+            break;
+          }
+          
+          if (i > 3 && currentCount < 10) {
+            console.log(`Session ${sessionId}: Very few results found, stopping scroll`);
+            break;
+          }
+        } catch (scrollError) {
+          console.error(`Session ${sessionId}: Error during scroll iteration ${i + 1}:`, scrollError);
+          // Continue with next iteration or break if critical error
+          if (scrollError.message.includes('crashed') || scrollError.message.includes('Target closed')) {
+            break;
+          }
         }
       }
     }
