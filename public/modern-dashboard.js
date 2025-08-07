@@ -2724,7 +2724,18 @@ function showEmailProvider(provider) {
     document.querySelectorAll('.provider-tab').forEach(tab => {
         tab.classList.remove('active');
     });
-    event.target.closest('.provider-tab').classList.add('active');
+    
+    // Find and activate the correct provider tab based on provider type
+    if (provider === 'gmail') {
+        const gmailTab = document.querySelector('.provider-tab img[alt="Gmail"]')?.closest('.provider-tab');
+        if (gmailTab) gmailTab.classList.add('active');
+    } else if (provider === 'outlook') {
+        const outlookTab = document.querySelector('.provider-tab img[alt="Outlook"]')?.closest('.provider-tab');
+        if (outlookTab) outlookTab.classList.add('active');
+    } else if (provider === 'custom') {
+        const customTab = document.querySelector('.provider-tab svg')?.closest('.provider-tab');
+        if (customTab) customTab.classList.add('active');
+    }
     
     // Hide all setups
     document.querySelectorAll('.provider-setup').forEach(setup => {
