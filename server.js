@@ -910,17 +910,39 @@ async function scrapeBusinesses(searchQuery, sessionId) {
     if (isConsentPage) {
       updateSessionStatus(sessionId, 'Handling cookie consent...');
       
-      const acceptButton = await page.$('input[type="submit"][value="Alles accepteren"]');
-      if (acceptButton) {
-        await acceptButton.click();
-        updateSessionStatus(sessionId, 'Clicked accept button, waiting for redirect...');
-        await page.waitForTimeout(2000);
-      } else {
-        const rejectButton = await page.$('input[type="submit"][value="Alles afwijzen"]');
-        if (rejectButton) {
-          await rejectButton.click();
-          await page.waitForTimeout(2000);
+      try {
+        const acceptButton = await page.$('input[type="submit"][value="Alles accepteren"]');
+        if (acceptButton) {
+          // Click without waiting for navigation to avoid timeout
+          await Promise.race([
+            acceptButton.click({ timeout: 5000 }),
+            page.waitForTimeout(5000)
+          ]);
+          updateSessionStatus(sessionId, 'Clicked accept button, waiting for page to load...');
+          
+          // Wait for page to navigate or timeout gracefully
+          try {
+            await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+          } catch (loadError) {
+            console.log(`Session ${sessionId}: Page load timeout, continuing anyway`);
+          }
+        } else {
+          const rejectButton = await page.$('input[type="submit"][value="Alles afwijzen"]');
+          if (rejectButton) {
+            await Promise.race([
+              rejectButton.click({ timeout: 5000 }),
+              page.waitForTimeout(5000)
+            ]);
+            try {
+              await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+            } catch (loadError) {
+              console.log(`Session ${sessionId}: Page load timeout after reject, continuing`);
+            }
+          }
         }
+      } catch (consentError) {
+        console.log(`Session ${sessionId}: Consent handling error, continuing: ${consentError.message}`);
+        updateSessionStatus(sessionId, 'Consent handling failed, continuing to search...');
       }
     }
     
@@ -1181,18 +1203,30 @@ async function handleConsentIfNeeded(page) {
     if (isConsentPage) {
       console.log('Handling cookie consent on business page...');
       
-      const acceptButton = await page.$('input[type="submit"][value="Alles accepteren"]');
-      if (acceptButton) {
-        await acceptButton.click();
-        await page.waitForTimeout(2000);
-        return true;
-      } else {
-        const rejectButton = await page.$('input[type="submit"][value="Alles afwijzen"]');
-        if (rejectButton) {
-          await rejectButton.click();
-          await page.waitForTimeout(2000);
+      try {
+        const acceptButton = await page.$('input[type="submit"][value="Alles accepteren"]');
+        if (acceptButton) {
+          // Click with timeout to prevent hanging
+          await Promise.race([
+            acceptButton.click({ timeout: 3000 }),
+            page.waitForTimeout(3000)
+          ]);
+          await page.waitForTimeout(1000);
           return true;
+        } else {
+          const rejectButton = await page.$('input[type="submit"][value="Alles afwijzen"]');
+          if (rejectButton) {
+            await Promise.race([
+              rejectButton.click({ timeout: 3000 }),
+              page.waitForTimeout(3000)
+            ]);
+            await page.waitForTimeout(1000);
+            return true;
+          }
         }
+      } catch (clickError) {
+        console.log('Consent click timeout, continuing anyway:', clickError.message);
+        return false;
       }
     }
     return false;
