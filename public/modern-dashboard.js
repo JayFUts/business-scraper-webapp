@@ -2453,6 +2453,26 @@ function createBusinessCard(business) {
         </div>
     `;
     
+    // Add email button if email exists
+    if (business.emails && business.emails.length > 0) {
+        const actions = document.createElement('div');
+        actions.className = 'business-actions';
+        
+        const emailButton = document.createElement('button');
+        emailButton.className = 'btn btn-primary btn-sm generate-email-btn';
+        emailButton.innerHTML = `
+            <svg class="btn-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 5C3 4.44772 3.44772 4 4 4H16C16.5523 4 17 4.44772 17 5V15C17 15.5523 16.5523 16 16 16H4C3.44772 16 3 15.5523 3 15V5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M3 5L10 11L17 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Generate Personalized Email
+        `;
+        emailButton.onclick = () => generatePersonalizedEmail(business);
+        
+        actions.appendChild(emailButton);
+        card.appendChild(actions);
+    }
+    
     return card;
 }
 
