@@ -1144,6 +1144,24 @@ function initializeSettings() {
             buyMoreCreditsButton.addEventListener('click', showBuyCredits);
         }
         
+        // Load saved email configuration
+        emailConfig = JSON.parse(localStorage.getItem('emailConfig') || '{}');
+        
+        // Set active provider and load config
+        if (emailConfig.activeProvider) {
+            currentEmailProvider = emailConfig.activeProvider;
+            // Update the provider tabs
+            document.querySelectorAll('.provider-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            const activeTab = document.querySelector(`.provider-tab:has(${currentEmailProvider === 'gmail' ? 'img[alt="Gmail"]' : currentEmailProvider === 'outlook' ? 'img[alt="Outlook"]' : 'svg'})`);
+            if (activeTab) {
+                activeTab.classList.add('active');
+            }
+            // Show the correct provider setup and load saved config
+            showEmailProvider(currentEmailProvider);
+        }
+        
         // Setup logo upload
         const logoUpload = document.getElementById('logoUpload');
         if (logoUpload) {
